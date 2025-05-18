@@ -33,9 +33,10 @@ def plot_scenario(
                 plt.Circle(
                     robots_pos[i],
                     est_targets_dists[i, j],
-                    color="g",
+                    color=target_colors[j],
                     fill=False,
                     alpha=0.25,
+                    linestyle="--",
                 )
             )
 
@@ -95,6 +96,9 @@ NUM_TARGETS = 1
 VARS_DIM = 2
 NOISE_STD = 0.04
 
+NUM_ITERATIONS = 1000
+ALPHA = lambda k: (5e-3 / (k / 1000 + 1)) ** 0.5
+
 SEED = 24
 
 ####################################
@@ -126,54 +130,55 @@ z0 = rng.random(size=(NUM_ROBOTS, NUM_TARGETS * VARS_DIM))
 
 _, A = create_network_of_agents(
     NUM_ROBOTS,
-    "doubly-stochastic",
     connected=True,
+    self_loops=True,
     seed=SEED,
-    doubly_stochastic_num_iter=10000,
+    graph_algorithm="erdos_renyi",
+    erdos_renyi_p=0.3,
 )
 
 history_z = gradient_tracking_algorithm(
     fn_list=loss_fns,
     z0=z0.copy(),
     A=A,
-    num_iters=1000,
-    alpha=2e-2,
+    num_iters=NUM_ITERATIONS,
+    alpha=ALPHA,
 )
 
-# plot_scenario(
-#     robots_pos,
-#     targets_pos_real,
-#     est_targets_dists,
-#     history_z[-1],
-#     num_targets=NUM_TARGETS,
-# )
-# plt.show()
+plot_scenario(
+    robots_pos,
+    targets_pos_real,
+    est_targets_dists,
+    history_z[-1],
+    num_targets=NUM_TARGETS,
+)
+plt.show()
 
 
-# plt.figure(figsize=(15, 5))
+plt.figure(figsize=(15, 5))
 
-# plt.subplot(1, 2, 1)
-# plt.title("Loss")
-# plt.xlabel("Iterations")
-# plt.yscale("log")
-# plt.plot(
-#     range(len(history_z)),
-#     [sum(loss_fns[i](z[i].flatten()) for i in range(NUM_ROBOTS)) for z in history_z],
-# )
+plt.subplot(1, 2, 1)
+plt.title("Loss")
+plt.xlabel("Iterations")
+plt.yscale("log")
+plt.plot(
+    range(len(history_z)),
+    [sum(loss_fns[i](z[i].flatten()) for i in range(NUM_ROBOTS)) for z in history_z],
+)
 
-# plt.subplot(1, 2, 2)
-# plt.title("Norm grad")
-# plt.xlabel("Iterations")
-# plt.yscale("log")
-# plt.plot(
-#     range(len(history_z)),
-#     [
-#         sum(np.linalg.norm(loss_fns[i].grad(z[i].flatten())) for i in range(NUM_ROBOTS))
-#         for z in history_z
-#     ],
-# )
+plt.subplot(1, 2, 2)
+plt.title("Norm grad")
+plt.xlabel("Iterations")
+plt.yscale("log")
+plt.plot(
+    range(len(history_z)),
+    [
+        sum(np.linalg.norm(loss_fns[i].grad(z[i].flatten())) for i in range(NUM_ROBOTS))
+        for z in history_z
+    ],
+)
 
-# plt.show()
+plt.show()
 
 
 ####################################
@@ -186,70 +191,70 @@ history_z = gradient_tracking_algorithm(
 # Problem: it doesn't really work
 
 
-num_robots = np.arange(2, 30, 1)
-NOISE_STD = 0.5
-REPS = 1  # Number of repetitions for each number of robots, to get a good average
+# num_robots = np.arange(2, 30, 1)
+# NOISE_STD = 0.5
+# REPS = 1  # Number of repetitions for each number of robots, to get a good average
 
-errors = np.zeros((len(num_robots), REPS))
+# errors = np.zeros((len(num_robots), REPS))
 
-rng = np.random.default_rng(SEED)
+# rng = np.random.default_rng(SEED)
 
-for index, NUM_ROBOTS in tqdm(enumerate(num_robots), total=len(num_robots)):
-    for rep in range(REPS):
-        # Create new random positions
-        robots_pos = rng.random(size=(NUM_ROBOTS, VARS_DIM))
-        targets_pos_real = rng.random(size=(NUM_TARGETS, VARS_DIM))
+# for index, NUM_ROBOTS in tqdm(enumerate(num_robots), total=len(num_robots)):
+#     for rep in range(REPS):
+#         # Create new random positions
+#         robots_pos = rng.random(size=(NUM_ROBOTS, VARS_DIM))
+#         targets_pos_real = rng.random(size=(NUM_TARGETS, VARS_DIM))
 
-        noise_rng = np.random.default_rng(SEED)
-        est_targets_dists = np.zeros((NUM_ROBOTS, NUM_TARGETS))
-        for i in range(NUM_ROBOTS):
-            for j in range(NUM_TARGETS):
-                est_targets_dists[i, j] = np.linalg.norm(
-                    robots_pos[i] - targets_pos_real[j], 2
-                ) + noise_rng.normal(scale=NOISE_STD)
+#         noise_rng = np.random.default_rng(SEED)
+#         est_targets_dists = np.zeros((NUM_ROBOTS, NUM_TARGETS))
+#         for i in range(NUM_ROBOTS):
+#             for j in range(NUM_TARGETS):
+#                 est_targets_dists[i, j] = np.linalg.norm(
+#                     robots_pos[i] - targets_pos_real[j], 2
+#                 ) + noise_rng.normal(scale=NOISE_STD)
 
-        loss_fns = [
-            LossFunctionTask1(
-                robots_pos[i], est_targets_dists[i], NUM_TARGETS, VARS_DIM
-            )
-            for i in range(NUM_ROBOTS)
-        ]
+#         loss_fns = [
+#             LossFunctionTask1(
+#                 robots_pos[i], est_targets_dists[i], NUM_TARGETS, VARS_DIM
+#             )
+#             for i in range(NUM_ROBOTS)
+#         ]
 
-        _, A = create_network_of_agents(
-            NUM_ROBOTS,
-            "doubly-stochastic",
-            connected=True,
-            seed=int(rng.integers(0, 9999999)),
-            doubly_stochastic_num_iter=10000,
-        )
-        z0 = rng.random(size=(NUM_ROBOTS, NUM_TARGETS * VARS_DIM))
-        history_z = gradient_tracking_algorithm(
-            fn_list=loss_fns,
-            z0=z0.copy(),
-            A=A,
-            num_iters=1000,
-            alpha=2e-2,
-        )
-        average_z = np.mean(history_z[-1], axis=0)
-        error = np.linalg.norm(average_z - targets_pos_real[0], 2)
-        errors[index, rep] = error
+#         _, A = create_network_of_agents(
+#             NUM_ROBOTS,
+#             "doubly-stochastic",
+#             connected=True,
+#             seed=int(rng.integers(0, 9999999)),
+#             doubly_stochastic_num_iter=10000,
+#         )
+#         z0 = rng.random(size=(NUM_ROBOTS, NUM_TARGETS * VARS_DIM))
+#         history_z = gradient_tracking_algorithm(
+#             fn_list=loss_fns,
+#             z0=z0.copy(),
+#             A=A,
+#             num_iters=1000,
+#             alpha=2e-2,
+#         )
+#         average_z = np.mean(history_z[-1], axis=0)
+#         error = np.linalg.norm(average_z - targets_pos_real[0], 2)
+#         errors[index, rep] = error
 
-print("Errors:", errors)
-erros_mean = np.mean(errors, axis=1)
-erros_std = np.std(errors, axis=1)
+# print("Errors:", errors)
+# erros_mean = np.mean(errors, axis=1)
+# erros_std = np.std(errors, axis=1)
 
-plt.figure(figsize=(10, 5))
-plt.title("Error vs Number of Robots")
-plt.xlabel("Number of Robots")
-plt.ylabel("Error")
-plt.plot(num_robots, erros_mean, label="Mean Error")
-# plt.fill_between(
-#     num_robots,
-#     erros_mean - erros_std,
-#     erros_mean + erros_std,
-#     alpha=0.2,
-#     label="Std Error",
-# )
-plt.legend()
-plt.grid()
-plt.show()
+# plt.figure(figsize=(10, 5))
+# plt.title("Error vs Number of Robots")
+# plt.xlabel("Number of Robots")
+# plt.ylabel("Error")
+# plt.plot(num_robots, erros_mean, label="Mean Error")
+# # plt.fill_between(
+# #     num_robots,
+# #     erros_mean - erros_std,
+# #     erros_mean + erros_std,
+# #     alpha=0.2,
+# #     label="Std Error",
+# # )
+# plt.legend()
+# plt.grid()
+# plt.show()

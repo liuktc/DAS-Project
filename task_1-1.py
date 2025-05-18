@@ -13,6 +13,8 @@ from utils import gradient_tracking_algorithm, create_network_of_agents
 NUM_AGENTS = 10
 VARS_DIM = 2
 SEED = 42
+NUM_ITERATIONS = 1000
+ALPHA = lambda k: 2e-2
 
 ####################################
 # PARAMETERS
@@ -40,8 +42,8 @@ def compute_and_plot_scenario(A, G: nx.Graph, suptitle=""):
         fn_list=quadratic_fns,
         z0=z0.copy(),
         A=A,
-        num_iters=1000,
-        alpha=2e-2,
+        num_iters=NUM_ITERATIONS,
+        alpha=ALPHA,
     )
 
     ############################
@@ -93,11 +95,11 @@ def compute_and_plot_scenario(A, G: nx.Graph, suptitle=""):
 ##############################
 G, A = create_network_of_agents(
     NUM_AGENTS,
-    "doubly-stochastic",
     connected=True,
+    self_loops=True,
     seed=SEED,
-    doubly_stochastic_num_iter=10000,
     graph_algorithm="erdos_renyi",
+    erdos_renyi_p=0.3,
 )
 compute_and_plot_scenario(A, G, suptitle="Erdos-Renyi graph (p=0.3)")
 
@@ -107,10 +109,9 @@ compute_and_plot_scenario(A, G, suptitle="Erdos-Renyi graph (p=0.3)")
 ################################
 G, A = create_network_of_agents(
     NUM_AGENTS,
-    "doubly-stochastic",
     connected=True,
+    self_loops=True,
     seed=SEED,
-    doubly_stochastic_num_iter=10000,
     graph_algorithm="cycle",
 )
 compute_and_plot_scenario(A, G, suptitle="Cycle graph")
@@ -122,10 +123,9 @@ compute_and_plot_scenario(A, G, suptitle="Cycle graph")
 ##############################
 G, A = create_network_of_agents(
     NUM_AGENTS,
-    "doubly-stochastic",
     connected=True,
+    self_loops=True,
     seed=SEED,
-    doubly_stochastic_num_iter=10000,
     graph_algorithm="star",
 )
 compute_and_plot_scenario(A, G, suptitle="Star graph")

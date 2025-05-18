@@ -6,7 +6,11 @@ from typing import Literal
 
 
 def gradient_tracking_algorithm(
-    fn_list: list[Function], z0: np.ndarray, A: np.ndarray, alpha: float, num_iters: int
+    fn_list: list[Function],
+    z0: np.ndarray,
+    A: np.ndarray,
+    alpha: callable,
+    num_iters: int,
 ):
     num_agents = z0.shape[0]
     vars_dim = z0.shape[1]
@@ -19,7 +23,7 @@ def gradient_tracking_algorithm(
         # Parameters update
         for i in range(num_agents):
             neighbors = np.nonzero(A[i])[0]
-            z[k + 1, i] = sum(A[i, j] * z[k, j] for j in neighbors) - alpha * s[k, i]
+            z[k + 1, i] = sum(A[i, j] * z[k, j] for j in neighbors) - alpha(k) * s[k, i]
 
         # Innovation update
         for i in range(num_agents):
@@ -35,14 +39,10 @@ def gradient_tracking_algorithm(
 
 def create_network_of_agents(
     num_agents: int,
-    adjacency_form: Literal[
-        "unweighted", "row-stochastic", "columm-stochastic", "doubly-stochastic"
-    ] = "unweighted",
     self_loops: bool = True,
     connected: bool = True,
     graph_algorithm: Literal["erdos_renyi", "cycle", "star", "path"] = "erdos_renyi",
     erdos_renyi_p: float = 0.3,
-    doubly_stochastic_num_iter: int = 50,
     seed: int = 42,
 ):
     # Create communication graph
@@ -65,31 +65,22 @@ def create_network_of_agents(
 
     # Create adjacency matrix
     adj_matrix = nx.adjacency_matrix(G).toarray().astype(np.float32)
-    match adjacency_form:
-        case "unweighted":
-            pass
-        case "row-stochastic":
-            adj_matrix = adj_matrix / np.sum(adj_matrix, axis=1, keepdims=True)
-            assert np.all(
-                np.isclose(adj_matrix.sum(axis=1), np.ones((adj_matrix.shape[0])))
-            )
-        case "column-stochastic":
-            adj_matrix = adj_matrix / np.sum(adj_matrix, axis=0, keepdims=True)
-            assert np.all(
-                np.isclose(adj_matrix.sum(axis=0), np.ones((adj_matrix.shape[1])))
-            )
-        case "doubly-stochastic":
-            for _ in range(doubly_stochastic_num_iter):
-                adj_matrix = adj_matrix / adj_matrix.sum(axis=0, keepdims=True)
-                adj_matrix = adj_matrix / adj_matrix.sum(axis=1, keepdims=True)
-                adj_matrix = np.abs(adj_matrix)
-            assert np.all(
-                np.isclose(adj_matrix.sum(axis=0), np.ones((adj_matrix.shape[1])))
-            ), "Might need a higher `doubly_stochastic_num_iter`"
-            assert np.all(
-                np.isclose(adj_matrix.sum(axis=1), np.ones((adj_matrix.shape[0])))
-            ), "Might need a higher `doubly_stochastic_num_iter`"
-        case _:
-            raise RuntimeError("Invalid matrix form")
+
+    # Compute edge degrees
+    degrees = np.sum(adj_matrix, axis=1)
+
+    # Make the adjacency matrix doubly stochastic using the Metropolis-Hasting weights
+    for i in range(num_agents):
+        for j in range(num_agents):
+            if adj_matrix[i, j] != 0 and i != j:
+                adj_matrix[i, j] = 1 / (1 + max(degrees[i], degrees[j]))
+
+    for i in range(num_agents):
+        neighbors = np.nonzero(adj_matrix[i])[0]
+        for j in range(num_agents):
+            if i == j:
+                adj_matrix[i, j] = 1 - sum(
+                    adj_matrix[i, h] for h in neighbors if h != i
+                )
 
     return G, adj_matrix
