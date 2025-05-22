@@ -88,21 +88,22 @@ def plot_scenario(
 
 
 ################################
-# CONSTANTS
+# PARAMETERS
 ################################
 
 NUM_ROBOTS = 5
-NUM_TARGETS = 1
+NUM_TARGETS = 2
 VARS_DIM = 2
 NOISE_STD = 0.04
 
 NUM_ITERATIONS = 1000
-ALPHA = lambda k: (5e-3 / (k / 1000 + 1)) ** 0.5
+# ALPHA = lambda k: (5e-3 / (k / 1000 + 1)) ** 0.5
+ALPHA = lambda k: 2e-2
 
 SEED = 24
 
 ####################################
-# PARAMETERS
+# PROBLEM SETUP
 ####################################
 rng = np.random.default_rng(SEED)
 
@@ -117,7 +118,7 @@ for i in range(NUM_ROBOTS):
         ) + rng.normal(scale=NOISE_STD)
 
 
-loss_fns = [
+loss_functions = [
     LossFunctionTask1(robots_pos[i], est_targets_dists[i], NUM_TARGETS, VARS_DIM)
     for i in range(NUM_ROBOTS)
 ]
@@ -125,8 +126,6 @@ loss_fns = [
 # Initial guess
 z0 = rng.random(size=(NUM_ROBOTS, NUM_TARGETS * VARS_DIM))
 
-# plot_scenario(robots_pos, targets_pos_real, est_targets_dists, num_targets=NUM_TARGETS)
-# plt.show()
 
 _, A = create_network_of_agents(
     NUM_ROBOTS,
@@ -138,13 +137,30 @@ _, A = create_network_of_agents(
 )
 
 history_z = gradient_tracking_algorithm(
-    fn_list=loss_fns,
+    fn_list=loss_functions,
     z0=z0.copy(),
     A=A,
     num_iters=NUM_ITERATIONS,
     alpha=ALPHA,
 )
 
+
+############################
+# PLOT SCENARIO
+############################
+
+plt.figure(figsize=(10, 5))
+plt.subplot(1, 2, 1)
+plot_scenario(
+    robots_pos,
+    targets_pos_real,
+    est_targets_dists,
+    history_z[0],
+    num_targets=NUM_TARGETS,
+)
+plt.title("Initial guess")
+plt.subplot(1, 2, 2)
+plt.title("Final guess")
 plot_scenario(
     robots_pos,
     targets_pos_real,
@@ -155,15 +171,21 @@ plot_scenario(
 plt.show()
 
 
-plt.figure(figsize=(15, 5))
+##############################
+# PLOT COST AND GRADIENT
+##############################
 
+plt.figure(figsize=(10, 5))
 plt.subplot(1, 2, 1)
 plt.title("Loss")
 plt.xlabel("Iterations")
 plt.yscale("log")
 plt.plot(
     range(len(history_z)),
-    [sum(loss_fns[i](z[i].flatten()) for i in range(NUM_ROBOTS)) for z in history_z],
+    [
+        sum(loss_functions[i](z[i].flatten()) for i in range(NUM_ROBOTS))
+        for z in history_z
+    ],
 )
 
 plt.subplot(1, 2, 2)
@@ -173,88 +195,12 @@ plt.yscale("log")
 plt.plot(
     range(len(history_z)),
     [
-        sum(np.linalg.norm(loss_fns[i].grad(z[i].flatten())) for i in range(NUM_ROBOTS))
+        sum(
+            np.linalg.norm(loss_functions[i].grad(z[i].flatten()))
+            for i in range(NUM_ROBOTS)
+        )
         for z in history_z
     ],
 )
 
 plt.show()
-
-
-####################################
-# ERROR ANALYSIS
-####################################
-# Main idea: in theory, given a certain amount of i.i.d. noises,
-# the error should decrease with the number of robots. Hopefully the
-# graph shows that the prediction error is decreasing with the number of robots.
-#
-# Problem: it doesn't really work
-
-
-# num_robots = np.arange(2, 30, 1)
-# NOISE_STD = 0.5
-# REPS = 1  # Number of repetitions for each number of robots, to get a good average
-
-# errors = np.zeros((len(num_robots), REPS))
-
-# rng = np.random.default_rng(SEED)
-
-# for index, NUM_ROBOTS in tqdm(enumerate(num_robots), total=len(num_robots)):
-#     for rep in range(REPS):
-#         # Create new random positions
-#         robots_pos = rng.random(size=(NUM_ROBOTS, VARS_DIM))
-#         targets_pos_real = rng.random(size=(NUM_TARGETS, VARS_DIM))
-
-#         noise_rng = np.random.default_rng(SEED)
-#         est_targets_dists = np.zeros((NUM_ROBOTS, NUM_TARGETS))
-#         for i in range(NUM_ROBOTS):
-#             for j in range(NUM_TARGETS):
-#                 est_targets_dists[i, j] = np.linalg.norm(
-#                     robots_pos[i] - targets_pos_real[j], 2
-#                 ) + noise_rng.normal(scale=NOISE_STD)
-
-#         loss_fns = [
-#             LossFunctionTask1(
-#                 robots_pos[i], est_targets_dists[i], NUM_TARGETS, VARS_DIM
-#             )
-#             for i in range(NUM_ROBOTS)
-#         ]
-
-#         _, A = create_network_of_agents(
-#             NUM_ROBOTS,
-#             "doubly-stochastic",
-#             connected=True,
-#             seed=int(rng.integers(0, 9999999)),
-#             doubly_stochastic_num_iter=10000,
-#         )
-#         z0 = rng.random(size=(NUM_ROBOTS, NUM_TARGETS * VARS_DIM))
-#         history_z = gradient_tracking_algorithm(
-#             fn_list=loss_fns,
-#             z0=z0.copy(),
-#             A=A,
-#             num_iters=1000,
-#             alpha=2e-2,
-#         )
-#         average_z = np.mean(history_z[-1], axis=0)
-#         error = np.linalg.norm(average_z - targets_pos_real[0], 2)
-#         errors[index, rep] = error
-
-# print("Errors:", errors)
-# erros_mean = np.mean(errors, axis=1)
-# erros_std = np.std(errors, axis=1)
-
-# plt.figure(figsize=(10, 5))
-# plt.title("Error vs Number of Robots")
-# plt.xlabel("Number of Robots")
-# plt.ylabel("Error")
-# plt.plot(num_robots, erros_mean, label="Mean Error")
-# # plt.fill_between(
-# #     num_robots,
-# #     erros_mean - erros_std,
-# #     erros_mean + erros_std,
-# #     alpha=0.2,
-# #     label="Std Error",
-# # )
-# plt.legend()
-# plt.grid()
-# plt.show()

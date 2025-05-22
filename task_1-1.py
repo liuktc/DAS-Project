@@ -7,7 +7,7 @@ from utils import gradient_tracking_algorithm, create_network_of_agents
 
 
 ################################
-# CONSTANTS
+# PARAMETERS
 ################################
 
 NUM_AGENTS = 10
@@ -17,7 +17,7 @@ NUM_ITERATIONS = 1000
 ALPHA = lambda k: 2e-2
 
 ####################################
-# PARAMETERS
+# PROBLEM SETUP
 ####################################
 
 rng = np.random.default_rng(SEED)

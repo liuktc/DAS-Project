@@ -3,6 +3,7 @@ import networkx as nx
 from Function import Function
 
 from typing import Literal
+from tqdm.auto import tqdm
 
 
 def gradient_tracking_algorithm(
@@ -11,6 +12,7 @@ def gradient_tracking_algorithm(
     A: np.ndarray,
     alpha: callable,
     num_iters: int,
+    epsilon: float = 1e-6,
 ):
     num_agents = z0.shape[0]
     vars_dim = z0.shape[1]
@@ -19,7 +21,7 @@ def gradient_tracking_algorithm(
     z[0] = z0
     s[0] = np.array([fn_list[i].grad(z0[i]) for i in range(num_agents)])
 
-    for k in range(num_iters):
+    for k in tqdm(range(num_iters)):
         # Parameters update
         for i in range(num_agents):
             neighbors = np.nonzero(A[i])[0]
@@ -33,6 +35,11 @@ def gradient_tracking_algorithm(
             s[k + 1, i] = sum(A[i, j] * s[k, j] for j in neighbors) + (
                 grad_i_curr - grad_i_prev
             )
+
+        # Check convergence
+        if np.linalg.norm(z[k + 1] - z[k], ord=2) < epsilon:
+            print(f"Converged at iteration {k + 1}")
+            return z[: k + 2]
 
     return z
 

@@ -5,7 +5,9 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
 
-def plot_scenario(robots_pos: np.ndarray, private_targets: np.ndarray):
+def plot_scenario(
+    robots_pos: np.ndarray, private_targets: np.ndarray, old_robots_pos=None
+):
     colors = [
         "tab:orange",
         "tab:purple",
@@ -14,7 +16,7 @@ def plot_scenario(robots_pos: np.ndarray, private_targets: np.ndarray):
         "tab:cyan",
         "tab:red",
     ]
-    barycenter = np.mean(private_targets, axis=0)
+    barycenter = np.mean(robots_pos, axis=0)
     plt.plot(
         barycenter[0],
         barycenter[1],
@@ -38,8 +40,8 @@ def plot_scenario(robots_pos: np.ndarray, private_targets: np.ndarray):
             [robots_pos[i][0], barycenter[0]],
             [robots_pos[i][1], barycenter[1]],
             color=colors[i % len(colors)],
-            linestyle="--",
-            alpha=0.5,
+            linestyle="dashdot",
+            alpha=0.2,
         )
 
     for i in range(len(private_targets)):
@@ -53,14 +55,23 @@ def plot_scenario(robots_pos: np.ndarray, private_targets: np.ndarray):
             alpha=0.75,
         )
 
+    if old_robots_pos is not None:
+        # Trace the path of the robots
+        for i in range(len(robots_pos)):
+            plt.plot(
+                [old_robots_pos[j][i][0] for j in range(len(old_robots_pos))],
+                [old_robots_pos[j][i][1] for j in range(len(old_robots_pos))],
+                color=colors[i % len(colors)],
+                linestyle="--",
+                alpha=0.5,
+            )
+
 
 def phi(x):
     return x
 
 
 def grad_phi(x):
-    # return np.eye(x.shape[0])
-    # return 1
     return np.ones(x.shape[0])
 
 
@@ -68,7 +79,7 @@ def gradient_tracking_algorithm(
     fn_list: list[LossFunctionTask2],
     z0: np.ndarray,
     A: np.ndarray,
-    alpha: float,
+    alpha: callable,
     num_iters: int,
     num_agents: int,
     phi: callable = phi,
@@ -87,10 +98,7 @@ def gradient_tracking_algorithm(
         for i in range(num_agents):
             neighbors = np.nonzero(A[i])[0]
 
-            print((fn_list[i].grad_z(z[k, i], s[k, i])).shape)
-            print(grad_phi(z[k, i]).shape)
-
-            z[k + 1, i] = z[k, i] - alpha * (
+            z[k + 1, i] = z[k, i] - alpha(k) * (
                 fn_list[i].grad_z(z[k, i], s[k, i]) + v[k, i] * grad_phi(z[k, i])
             )
             s[k + 1, i] = sum(A[i, j] * s[k, j] for j in neighbors) + (
@@ -104,59 +112,80 @@ def gradient_tracking_algorithm(
     return z
 
 
+#############################
+# PARAMETERS
+#############################
+
 NUM_ROBOTS = 3
 VAR_DIMS = 2
 SEED = 42
+NUM_ITERATIONS = 1000
+ALPHA = lambda k: 2e-2
+GAMMAS = [0.1] * NUM_ROBOTS
 
 rng = np.random.default_rng(SEED)
 
-# robot_positions = rng.random(size=(NUM_ROBOTS, VAR_DIMS))
+#############################
+# PROBLEM SETUP
+#############################
+
 private_targets = rng.random(size=(NUM_ROBOTS, VAR_DIMS))
-
-gamma = 0.1
-loss_fns = [LossFunctionTask2(private_targets[i], gamma) for i in range(NUM_ROBOTS)]
-
+loss_functions = [
+    LossFunctionTask2(private_targets[i], GAMMAS[i]) for i in range(NUM_ROBOTS)
+]
 robot_initial_positions = rng.random(size=(NUM_ROBOTS, VAR_DIMS))
-
-plot_scenario(robot_initial_positions, private_targets)
-plt.show()
 
 G, A = create_network_of_agents(
     NUM_ROBOTS,
-    "doubly-stochastic",
     connected=True,
+    self_loops=True,
     seed=SEED,
-    doubly_stochastic_num_iter=10000,
     graph_algorithm="erdos_renyi",
+    erdos_renyi_p=0.3,
 )
 
 z_history = gradient_tracking_algorithm(
-    fn_list=loss_fns,
+    fn_list=loss_functions,
     z0=robot_initial_positions.copy(),
     A=A,
-    num_iters=1000,
-    alpha=2e-2,
+    num_iters=NUM_ITERATIONS,
+    alpha=ALPHA,
     num_agents=NUM_ROBOTS,
 )
 
 
+############################
+# PLOT SCENARIO
+############################
+
+plt.figure(figsize=(10, 5))
+plt.subplot(1, 2, 1)
+plot_scenario(z_history[0], private_targets)
+plt.title("Initial positions")
+plt.subplot(1, 2, 2)
 plot_scenario(z_history[-1], private_targets)
+plt.title("Final positions")
 plt.show()
 
+
+##############################
+# PLOT COST AND GRADIENT
+##############################
+
 cost_history = [
-    sum([loss_fns[i](z_i, np.mean(z)) for i, z_i in enumerate(z)]) for z in z_history
+    sum([loss_functions[i](z_i, np.mean(z)) for i, z_i in enumerate(z)])
+    for z in z_history
 ]
 
 grad_cost_history = [
     sum(
         [
-            np.linalg.norm(loss_fns[i].grad(z_i, np.mean(z)), 2)
+            np.linalg.norm(loss_functions[i].grad(z_i, np.mean(z)), 2)
             for i, z_i in enumerate(z)
         ]
     )
     for z in z_history
 ]
-# print(cost_history)
 plt.figure(figsize=(10, 4))
 plt.subplot(1, 2, 1)
 plt.title("Cost")
@@ -170,27 +199,3 @@ plt.xlabel("Iterations")
 plt.yscale("log")
 plt.tight_layout()
 plt.show()
-
-
-# Create an animation, by showing the scenario at each iteration
-def animate_scenario(z_history, private_targets, skip=10):
-    fig, ax = plt.subplots()
-    ax.set_xlim(0, 1)
-    ax.set_ylim(0, 1)
-    ax.set_title("Gradient Tracking Algorithm")
-    ax.set_xlabel("X")
-    ax.set_ylabel("Y")
-
-    frames = range(0, len(z_history), skip)
-
-    def update(frame_idx):
-        ax.clear()
-        plot_scenario(z_history[frames[frame_idx]], private_targets)
-        return (ax,)
-
-    ani = FuncAnimation(fig, update, frames=len(frames), blit=True)
-
-    plt.show()
-
-
-animate_scenario(z_history, private_targets)
