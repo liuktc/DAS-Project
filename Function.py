@@ -1,14 +1,7 @@
 import numpy as np
-import networkx as nx
 
 
 class Function:
-    """
-    Base class for defining a function and its gradient.
-    This class should be inherited by any specific function
-    that needs to be implemented.
-    """
-
     def __init__(self):
         pass
 

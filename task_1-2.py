@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from tqdm.auto import tqdm
 
 from Function import LossFunctionTask1
-from utils import gradient_tracking_algorithm, create_network_of_agents
+from utils import gradient_tracking, generate_adj_matrix
 
 
 def plot_scenario(
@@ -96,7 +96,7 @@ NUM_TARGETS = 2
 VARS_DIM = 2
 NOISE_STD = 0.04
 
-NUM_ITERATIONS = 1000
+NUM_ITERATIONS = 4000
 # ALPHA = lambda k: (5e-3 / (k / 1000 + 1)) ** 0.5
 ALPHA = lambda k: 2e-2
 
@@ -127,17 +127,16 @@ loss_functions = [
 z0 = rng.random(size=(NUM_ROBOTS, NUM_TARGETS * VARS_DIM))
 
 
-_, A = create_network_of_agents(
+_, A = generate_adj_matrix(
     NUM_ROBOTS,
     connected=True,
-    self_loops=True,
     seed=SEED,
     graph_algorithm="erdos_renyi",
     erdos_renyi_p=0.3,
 )
 
-history_z = gradient_tracking_algorithm(
-    fn_list=loss_functions,
+history_z = gradient_tracking(
+    loss_functions=loss_functions,
     z0=z0.copy(),
     A=A,
     num_iters=NUM_ITERATIONS,

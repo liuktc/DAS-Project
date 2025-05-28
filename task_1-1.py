@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 import networkx as nx
 
 from Function import QuadraticFunction
-from utils import gradient_tracking_algorithm, create_network_of_agents
+from utils import gradient_tracking, generate_adj_matrix
 
 
 ################################
@@ -13,7 +13,7 @@ from utils import gradient_tracking_algorithm, create_network_of_agents
 NUM_AGENTS = 10
 VARS_DIM = 2
 SEED = 42
-NUM_ITERATIONS = 1000
+NUM_ITERATIONS = 10_000
 ALPHA = lambda k: 2e-2
 
 ####################################
@@ -38,12 +38,13 @@ z0 = rng.random(size=(NUM_AGENTS, VARS_DIM))
 
 def compute_and_plot_scenario(A, G: nx.Graph, suptitle=""):
     # Gradient tracking algorithm computation
-    history_z = gradient_tracking_algorithm(
-        fn_list=quadratic_fns,
+    history_z = gradient_tracking(
+        loss_functions=quadratic_fns,
         z0=z0.copy(),
         A=A,
         num_iters=NUM_ITERATIONS,
         alpha=ALPHA,
+        epsilon=1e-20,
     )
 
     ############################
@@ -93,10 +94,9 @@ def compute_and_plot_scenario(A, G: nx.Graph, suptitle=""):
 # SCENARIO 1
 # Erdos-Renyi graph (p=0.3)
 ##############################
-G, A = create_network_of_agents(
+G, A = generate_adj_matrix(
     NUM_AGENTS,
     connected=True,
-    self_loops=True,
     seed=SEED,
     graph_algorithm="erdos_renyi",
     erdos_renyi_p=0.3,
@@ -107,10 +107,9 @@ compute_and_plot_scenario(A, G, suptitle="Erdos-Renyi graph (p=0.3)")
 # SCENARIO 2
 # Cycle graph
 ################################
-G, A = create_network_of_agents(
+G, A = generate_adj_matrix(
     NUM_AGENTS,
     connected=True,
-    self_loops=True,
     seed=SEED,
     graph_algorithm="cycle",
 )
@@ -121,10 +120,9 @@ compute_and_plot_scenario(A, G, suptitle="Cycle graph")
 # SCENARIO 3
 # Star graph
 ##############################
-G, A = create_network_of_agents(
+G, A = generate_adj_matrix(
     NUM_AGENTS,
     connected=True,
-    self_loops=True,
     seed=SEED,
     graph_algorithm="star",
 )

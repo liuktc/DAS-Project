@@ -1,6 +1,6 @@
 import numpy as np
 from Function import LossFunctionTask2
-from utils import create_network_of_agents
+from utils import generate_adj_matrix
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
@@ -75,7 +75,7 @@ def grad_phi(x):
     return np.ones(x.shape[0])
 
 
-def gradient_tracking_algorithm(
+def gradient_tracking_aggregative(
     fn_list: list[LossFunctionTask2],
     z0: np.ndarray,
     A: np.ndarray,
@@ -135,7 +135,7 @@ loss_functions = [
 ]
 robot_initial_positions = rng.random(size=(NUM_ROBOTS, VAR_DIMS))
 
-G, A = create_network_of_agents(
+G, A = generate_adj_matrix(
     NUM_ROBOTS,
     connected=True,
     self_loops=True,
@@ -144,7 +144,7 @@ G, A = create_network_of_agents(
     erdos_renyi_p=0.3,
 )
 
-z_history = gradient_tracking_algorithm(
+z_history = gradient_tracking_aggregative(
     fn_list=loss_functions,
     z0=robot_initial_positions.copy(),
     A=A,
