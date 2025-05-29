@@ -194,10 +194,9 @@ plt.yscale("log")
 plt.plot(
     range(len(history_z)),
     [
-        sum(
-            np.linalg.norm(loss_functions[i].grad(z[i].flatten()))
-            for i in range(NUM_ROBOTS)
-        )
+        
+            np.linalg.norm(sum(loss_functions[i].grad(z[i].flatten()) for i in range(NUM_ROBOTS)))
+        
         for z in history_z
     ],
 )
