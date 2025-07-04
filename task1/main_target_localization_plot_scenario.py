@@ -20,9 +20,10 @@ SEED = 42
 NUM_ITERATIONS = 5000
 ALPHA = lambda k: 2e-2
 
-NUM_AGENTS = 5
+
+NUM_AGENTS = 15
 VARS_DIM = 2
-NUM_TARGETS = 1
+NUM_TARGETS = 3
 NOISE_LEVEL = 0.04
 GRAPH_TYPES = "erdos_renyi"
 
@@ -51,7 +52,7 @@ def run_experiment(num_agents, vars_dim, num_targets, graph_type, noise_level, o
     )
     
     #Plots
-    plt.figure(figsize=(10, 5))
+    plt.figure(figsize=(16, 8))
     plt.subplot(1, 2, 1)
     plot_scenario(
         robots_pos=robots_pos,

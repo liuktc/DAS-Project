@@ -33,7 +33,7 @@ def run_experiment(num_agents, vars_dim, num_targets, noise_level, out_dir, seed
 
     history_z = {}
     #Computing history for all types of graph
-    plt.figure(figsize=(8, 8))
+    plt.figure(figsize=(16, 16))
     i = 1
     for graph_type in GRAPH_TYPES:
         G, A = generate_adj_matrix(
@@ -54,7 +54,7 @@ def run_experiment(num_agents, vars_dim, num_targets, noise_level, out_dir, seed
         )
     
     #Plots
-    plt.figure(figsize=(8, 8))
+    plt.figure(figsize=(16, 16))
     i = 1
     for graph_type in GRAPH_TYPES:
         plt.subplot(2, 2, i)
