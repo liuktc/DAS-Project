@@ -1,22 +1,54 @@
 from launch import LaunchDescription
 from launch_ros.actions import Node
+import numpy as np
+
+import os
+import sys
+sys.path.append( os.path.join(os.path.dirname(__file__), "../../../."))
+from utils import generate_adj_matrix
+
+
+###############################
+# PARAMETERS
+###############################
+
+NUM_ROBOTS = 3
+VAR_DIMS = 2
+SEED = 42
+NUM_ITERATIONS = 1000
+# ALPHA = lambda k: 2e-2
+ALPHA = 2e-3
+GAMMAS = [0.1] * NUM_ROBOTS
+
+rng = np.random.default_rng(SEED)
+
+
+#############################
+# PROBLEM SETUP
+#############################
+
+PRIVATE_TARGETS = rng.random(size=(NUM_ROBOTS, VAR_DIMS))
+ROBOT_INITIAL_POSITIONS = rng.random(size=(NUM_ROBOTS, VAR_DIMS))
+
+G, A = generate_adj_matrix(
+    NUM_ROBOTS,
+    connected=True,
+    seed=SEED,
+    graph_algorithm="erdos_renyi",
+    erdos_renyi_p=0.3,
+)
+
+print(A)
 
 def generate_launch_description():
-    num_robots = 3
     robot_nodes = []
 
-    # Initial positions and targets (based on your Task 2.1 setup)
-    initial_positions = [[0.8, 0.6], [0.2, 0.4], [0.5, 0.9]]
-    private_targets = [[0.7, 0.9], [0.1, 0.2], [0.6, 0.3]]
+    initial_positions = ROBOT_INITIAL_POSITIONS
+    private_targets = PRIVATE_TARGETS
 
-    # Communication graph (Erdős–Rényi-like adjacency matrix)
-    neighbors_map = {
-        0: [1, 2],
-        1: [0],
-        2: [0]
-    }
 
-    for i in range(num_robots):
+    for i in range(NUM_ROBOTS):
+        print(f"Creating robot node {i} with initial position {initial_positions[i]} and private target {private_targets[i]}")
         robot_node = Node(
             package='das',
             executable='robot_node',
@@ -24,12 +56,13 @@ def generate_launch_description():
             namespace=f'robot_{i}',
             parameters=[{
                 'robot_id': i,
-                'initial_position': initial_positions[i],
-                'private_target': private_targets[i],
-                'gamma': 0.1,
-                'alpha': 0.02,
-                'max_iterations': 1000,
-                'neighbors': neighbors_map[i],
+                'initial_position': initial_positions[i].tolist(),
+                'private_target': private_targets[i].tolist(),
+                'gamma': GAMMAS[i],
+                'alpha': ALPHA,
+                'max_iterations': NUM_ITERATIONS,
+                'neighbors': np.nonzero(A[i])[0].tolist(),
+                "neighbors_weights": A[i].tolist()
             }]
         )
         robot_nodes.append(robot_node)
