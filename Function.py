@@ -88,3 +88,63 @@ class LossFunctionTask2(Function):
         grad_z = self.grad_z(z, sigma_z)
         grad_sigma_z = self.grad_sigma_z(z, sigma_z)
         return np.concatenate((grad_z, grad_sigma_z), axis=0)
+
+
+class LossFunctionTask2_MaxDistance(Function):
+    def __init__(self, private_target: np.ndarray, max_distance: float):
+        self.private_target = private_target
+        self.max_distance = max_distance
+
+    def __call__(self, z: np.ndarray, sigma_z: np.ndarray) -> np.ndarray:
+        # "Go to my target" loss
+        target_loss = (
+            np.linalg.norm(z - self.private_target, 2) ** 2 - (self.max_distance**2)
+        ) ** 3
+
+        # "Stay near the team" loss
+        team_loss = np.linalg.norm(z - sigma_z, 2) ** 2
+
+        # Combine the two losses
+        return 100 * target_loss + team_loss
+
+    def grad_z(self, z: np.ndarray, sigma_z: np.ndarray) -> np.ndarray:
+        # Gradient w.r.t. z
+        # target_grad = (
+        #     3
+        #     * (
+        #         (
+        #             np.linalg.norm(z - self.private_target, 2) ** 2
+        #             - (self.max_distance**2)
+        #         )
+        #         ** 2
+        #     )
+        #     * 2
+        #     * (z - self.private_target)
+        # )
+        if np.linalg.norm(z - self.private_target, 2) ** 2 - self.max_distance**2 < 0:
+            target_grad = np.zeros_like(z)
+        else:
+            target_grad = (
+                3
+                * (
+                    np.linalg.norm(z - self.private_target, 2) ** 2
+                    - (self.max_distance)
+                )
+                ** 2
+                * 2
+                * (z - self.private_target)
+            )
+        # target_grad = 2 * (z - self.private_target)
+        team_grad = 2 * (z - sigma_z)
+        print(target_grad)
+        # return 100 * target_grad + team_grad
+        return 100000 * target_grad + team_grad
+
+    def grad_sigma_z(self, z: np.ndarray, sigma_z: np.ndarray) -> np.ndarray:
+        # Gradient w.r.t. sigma_z
+        return -2 * (z - sigma_z)
+
+    def grad(self, z: np.ndarray, sigma_z: np.ndarray) -> np.ndarray:
+        grad_z = self.grad_z(z, sigma_z)
+        grad_sigma_z = self.grad_sigma_z(z, sigma_z)
+        return np.concatenate((grad_z, grad_sigma_z), axis=0)

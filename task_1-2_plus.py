@@ -166,7 +166,9 @@ plt.title("Error vs Number of Robots")
 plt.xlabel("Number of Robots")
 plt.ylabel("Error")
 plt.plot(num_robots, erros_mean, label="Mean Error")
-plt.plot(num_robots, [NOISE_STD**2 for _ in num_robots], label="Noise Std")
+plt.plot(
+    num_robots, [NOISE_STD**2 for _ in num_robots], label="Noise Std", linestyle="--"
+)
 plt.fill_between(
     num_robots,
     erros_mean - erros_std,

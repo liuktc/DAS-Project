@@ -1,2 +1,8 @@
 __pycache__
 *.mp4
+
+ROS2/das/build
+ROS2/das/install
+ROS2/das/log
+ROS2/das/resource
+ROS2/das/test
