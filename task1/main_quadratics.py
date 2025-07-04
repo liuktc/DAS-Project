@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
 
+
 from Function import QuadraticFunction
 from utils import gradient_tracking, generate_adj_matrix
 
@@ -10,7 +11,7 @@ from utils import gradient_tracking, generate_adj_matrix
 # PARAMETERS
 ################################
 
-NUM_AGENTS = 10
+NUM_AGENTS = 3
 VARS_DIM = 2
 SEED = 42
 NUM_ITERATIONS = 10_000
@@ -60,7 +61,7 @@ def compute_and_plot_scenario(A, G: nx.Graph, suptitle=""):
     plt.subplot(1, 3, 1)
     plt.title("Cost")
     plt.xlabel("Iterations")
-    # plt.yscale("log")
+    plt.yscale("symlog")
     # plt.ylim(1e-20, 1e2)
     plt.plot([optimal_quadratic_fn(z.mean(axis=0)) for z in history_z])
     plt.plot([optimal_cost] * len(history_z), "--", label="Optimum")
