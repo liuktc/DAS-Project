@@ -40,8 +40,7 @@ class RobotNode(Node):
                          allow_undeclared_parameters = True,
                          automatically_declare_parameters_from_overrides = True,)
         
-        self.df:pd.DataFrame = pd.DataFrame(columns=["robot_id", "iteration", "position", "target", "sigma_est", "grad_est"])
-
+        # Get parameters
         self.robot_id = self.get_parameter('robot_id').value
         self.filename = f'robot_{self.robot_id}_data.csv'
         self.position = np.array(self.get_parameter('initial_position').value)
@@ -53,13 +52,17 @@ class RobotNode(Node):
         self.max_iterations = self.get_parameter('max_iterations').value
         self.neighbors = self.get_parameter('neighbors').value
         self.neighbors_weights = self.get_parameter('neighbors_weights').value
+        self.simulation_hz = self.get_parameter('simulation_hz').value
 
+        # Initialize DataFrame to store data
+        self.df:pd.DataFrame = pd.DataFrame(columns=["robot_id", "iteration", "position", "target", "sigma_est", "grad_est"])
+        
         # Local variables
         self.s_i = self.phi(self.position)
         self.v_i = self.loss_fn.grad_sigma_z(self.position, self.s_i)
         self.iteration = 0
 
-        # Communication
+        # Subscribe to neighbor states
         for neighbor in self.neighbors:
             self.create_subscription(
                 Float64MultiArray,
@@ -68,16 +71,17 @@ class RobotNode(Node):
                 10
             )
 
-
+        # Publisher for this robot's state
         self.publisher_ = self.create_publisher(Float64MultiArray, f'/robot_{self.robot_id}', 10)
 
+        # Create a timer to send state periodically
         self.create_timer(
             timer_period_sec=0.001,
             callback=self.send_state
         )
 
         self.create_timer(
-            timer_period_sec=1.0,  # Save data every second
+            timer_period_sec=5.0,  # Save data every 5 second
             callback=self.save_df
         )
         
@@ -110,9 +114,8 @@ class RobotNode(Node):
     
     
     def optimization_loop(self):
-        self.get_logger().info(f"Starting optimization for robot {self.robot_id} at position {self.position}")
         self.optimization_timer = self.create_timer(
-            timer_period_sec=0.01,  # Run every 0.1 seconds (~10 Hz)
+            timer_period_sec=1/self.simulation_hz,
             callback=self.optimization_step
         )
 
@@ -147,6 +150,7 @@ class RobotNode(Node):
         self.s_i = new_s
         self.v_i = new_v
         
+        # Publish the updated state
         msg = format_message(self.robot_id, self.iteration, self.target, self.s_i, self.v_i, self.position)
         self.publisher_.publish(msg)
 

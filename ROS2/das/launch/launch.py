@@ -22,6 +22,8 @@ GAMMAS = [0.1] * NUM_ROBOTS
 
 rng = np.random.default_rng(SEED)
 
+SIMULATION_HZ = 100 # Hz, how often the optimization step is run
+
 
 #############################
 # PROBLEM SETUP
@@ -62,7 +64,8 @@ def generate_launch_description():
                 'alpha': ALPHA,
                 'max_iterations': NUM_ITERATIONS,
                 'neighbors': np.nonzero(A[i])[0].tolist(),
-                "neighbors_weights": A[i].tolist()
+                "neighbors_weights": A[i].tolist(),
+                "simulation_hz": SIMULATION_HZ,
             }]
         )
         robot_nodes.append(robot_node)

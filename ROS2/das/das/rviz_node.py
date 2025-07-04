@@ -45,7 +45,7 @@ class RvizPublisher(Node):
         # Subscribe to each robot's topic
         for rid in range(self.num_robots):
             # topic_name = f'/robot_{rid}/robot_data'
-            topic_name = f"/robot_data"
+            topic_name = f"/robot_{rid}"
             self.create_subscription(
                 Float64MultiArray,
                 topic_name,
@@ -58,7 +58,6 @@ class RvizPublisher(Node):
         try:
             data = unpack_message(msg)
             robot_id = data["id"]
-            z = data["z"]
 
             # Create publisher if not already created
             if robot_id not in self.pose_publishers:
@@ -69,24 +68,10 @@ class RvizPublisher(Node):
                 target_topic = f'/robot_{robot_id}/target'
                 self.target_publishers[robot_id] = self.create_publisher(Marker, target_topic, 10)
 
-            # # Build PoseStamped message
-            # pose = PoseStamped()
-            # pose.header.stamp = self.get_clock().now().to_msg()
-            # pose.header.frame_id = 'world'
-            # pose.pose.position.x = float(z[0])
-            # pose.pose.position.y = float(z[1])
-            # pose.pose.orientation.w = 1.0  # Identity rotation
-
-            # # Plot also the target position as a sphere
-            target_pos = data["target_pos"]
-            # target_sphere = PoseStamped()
-            # target_sphere.header.stamp = self.get_clock().now().to_msg()
-            # target_sphere.header.frame_id = 'world'
-            # target_sphere.pose.position.x = float(target_pos[0])
-            # target_sphere.pose.position.y = float(target_pos[1])
-            # target_sphere.pose.orientation.w = 1.0  # Identity rotation
+        
             
             # Sphere for robot position
+            z = data["z"]
             marker = Marker()
             marker.header.stamp = self.get_clock().now().to_msg()
             marker.header.frame_id = 'world'
@@ -105,9 +90,12 @@ class RvizPublisher(Node):
             marker.color.g = 1.0
             marker.color.b = 0.0
             marker.color.a = 1.0  # Alpha (transparency)
+            # Publish
+            self.pose_publishers[robot_id].publish(marker)
 
 
             # Sphere for target position
+            target_pos = data["target_pos"]
             target_marker = Marker()
             target_marker.header = marker.header
             target_marker.ns = 'target'
@@ -125,11 +113,7 @@ class RvizPublisher(Node):
             target_marker.color.g = 0.0
             target_marker.color.b = 0.0
             target_marker.color.a = 1.0
-
-
-
             # Publish
-            self.pose_publishers[robot_id].publish(marker)
             self.target_publishers[robot_id].publish(target_marker)
 
 
