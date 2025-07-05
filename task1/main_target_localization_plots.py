@@ -61,6 +61,7 @@ def run_experiment(num_agents, vars_dim, num_targets, noise_level, out_dir, seed
         plot_cost_target_localization(local_loss, history_z[graph_type], num_agents, graph_type)
         plt.title(graph_type)
         plt.xlabel("$k$")
+        plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
         plt.ylabel("$l(z^k) (log)$")
         plt.yscale("log")
         i += 1
@@ -71,13 +72,17 @@ def run_experiment(num_agents, vars_dim, num_targets, noise_level, out_dir, seed
     #plt.show()
 
     
-    plt.figure(figsize=(8, 8))
+    plt.figure(figsize=(16, 16))
     i = 1
     for graph_type in GRAPH_TYPES:
         plt.subplot(2, 2, i)
         plot_target_localization_gradient_norm(local_loss, history_z[graph_type], num_agents, graph_type)
         plt.title(graph_type)
         plt.xlabel("$k$")
+        plt.grid(visible=True, which='major', linestyle='-', linewidth=0.8, alpha=0.7)
+        plt.grid(visible=True, which='minor', linestyle=':', linewidth=0.5, alpha=0.4)
+        # plt.grid()
+        # plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
         plt.ylabel("$\\left\\Vert \\nabla l(z^k) \\right\\Vert_2$ (log)")
         plt.yscale('log')
         i += 1
