@@ -29,8 +29,8 @@ GRAPH_TYPES = ["erdos_renyi", "cycle", "star", "path"]
 
 def run_experiment(num_agents, vars_dim, num_targets, noise_level, out_dir, seed):
     os.makedirs(os.path.join("figs", out_dir), exist_ok=True)
-    local_loss, z0, robots_pos, targets_pos_real, est_targets_dists = setup_target_localization_problem(num_agents=num_agents, num_targets=num_targets, vars_dim=vars_dim, noise_level=noise_level, seed=seed)
-
+    local_loss, z0, _, _, _ = setup_target_localization_problem(
+        num_agents=num_agents, num_targets=num_targets, vars_dim=vars_dim, noise_level=noise_level, seed=seed)
     history_z = {}
     #Computing history for all types of graph
     plt.figure(figsize=(16, 16))
