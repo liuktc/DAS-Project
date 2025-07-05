@@ -94,3 +94,18 @@ def generate_adj_matrix(
                 A[i, j] = 1 - sum(A[i, h] for h in neighbors if h != i)
 
     return G, A
+
+def get_average_consensus_error(z):
+    consensus = np.mean(z, axis=0)
+    return np.mean([np.linalg.norm(z[i]-consensus) for i in range(len(z))])
+
+def get_average_estimate_error(robot_estimates, target_pos_real):
+    num_robots = len(robot_estimates)
+    num_targets = len(target_pos_real)
+    dists = 0
+    
+    for i in range(num_robots):
+        for j in range(num_targets):
+            dists += np.linalg.norm(robot_estimates[i, j] - target_pos_real[j])
+    
+    return dists / (num_robots*num_targets)
