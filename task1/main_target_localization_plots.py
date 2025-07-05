@@ -63,12 +63,13 @@ def run_experiment(num_agents, vars_dim, num_targets, noise_level, out_dir, seed
         plt.title(graph_type)
         plt.xlabel("$k$")
         plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
+        plt.grid()
         plt.ylabel("$l(z^k) (log)$")
         plt.yscale("log")
         i += 1
 
     plt.tight_layout(pad=1.0)
-    #plt.savefig(f"figs/{out_dir}/cost.pdf", bbox_inches="tight", dpi=300)
+    plt.savefig(f"figs/{out_dir}/cost.pdf", bbox_inches="tight", dpi=300)
     plt.close()
     #plt.show()
 
@@ -90,7 +91,7 @@ def run_experiment(num_agents, vars_dim, num_targets, noise_level, out_dir, seed
         #plt.legend(ncol=3, loc="upper center", columnspacing=0.8, labelspacing=0.25, bbox_to_anchor=(0.4, 1.35))
     
     plt.tight_layout(pad=1.0)
-    #plt.savefig(f"figs/{out_dir}/gradient.pdf", bbox_inches="tight", dpi=300)
+    plt.savefig(f"figs/{out_dir}/gradient.pdf", bbox_inches="tight", dpi=300)
     plt.close()
     #plt.show()
 
@@ -100,6 +101,7 @@ def run_experiment(num_agents, vars_dim, num_targets, noise_level, out_dir, seed
         plt.xlabel("$k$")
         plt.ylabel("Avg consensus error (log)")
         plt.yscale("log")
+    plt.grid()
     plt.tight_layout()
     plt.legend()
     plt.savefig(f"figs/{out_dir}/average_consensus_error.pdf", bbox_inches="tight", dpi=300)
@@ -132,12 +134,13 @@ def run_noise_experiment(num_agents, vars_dim, num_targets, graph_type, out_dir,
         )
 
         plot_cost_target_localization(local_loss, history_z[noise_level], num_agents, noise_level)
-        plt.xlabel("$k$")
-        plt.ylabel("$l(z^k) (log)$")
-        plt.yscale("log")
-        
+    
+    plt.xlabel("$k$")
+    plt.ylabel("$l(z^k) (log)$")
+    plt.yscale("log")    
     plt.tight_layout()
     plt.legend()
+    plt.grid()
     plt.savefig(f"figs/{out_dir}/noise_level_cost.pdf", bbox_inches="tight", dpi=300)
     plt.close()
     #plt.show()
@@ -164,12 +167,13 @@ def run_noise_experiment(num_agents, vars_dim, num_targets, graph_type, out_dir,
             epsilon=1e-20,
         )
         plot_target_localization_gradient_norm(local_loss, history_z[noise_level], num_agents, noise_level)
-        plt.xlabel("$k$")
-        plt.ylabel("$l(z^k) (log)$")
-        plt.yscale("log")
         
+    plt.xlabel("$k$")
+    plt.ylabel("$l(z^k) (log)$")
+    plt.yscale("log")
     plt.tight_layout()
     plt.legend()
+    plt.grid()
     plt.savefig(f"figs/{out_dir}/noise_level_grad.pdf", bbox_inches="tight", dpi=300)
     plt.close()
     #plt.show()

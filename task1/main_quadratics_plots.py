@@ -114,6 +114,7 @@ def run_experiment(num_agents, vars_dim, out_dir, seed):
         plt.yscale("log")
     plt.tight_layout()
     plt.legend()
+    plt.grid()
     plt.savefig(f"figs/{out_dir}/average_consensus_error.pdf", bbox_inches="tight", dpi=300)
     plt.close()
     #plt.show()
