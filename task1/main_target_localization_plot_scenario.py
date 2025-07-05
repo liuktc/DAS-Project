@@ -53,7 +53,7 @@ def run_experiment(num_agents, vars_dim, num_targets, graph_type, noise_level, o
     
     #Plots
     plt.figure(figsize=(16, 8))
-    plt.subplot(1, 2, 1)
+    plt.subplot(1, 3, 1)
     plot_scenario(
         robots_pos=robots_pos,
         targets_pos_real=targets_pos_real,
@@ -61,9 +61,18 @@ def run_experiment(num_agents, vars_dim, num_targets, graph_type, noise_level, o
         est_targets_pos=history_z[0],
         num_targets=NUM_TARGETS,
     )
-    plt.title("Initial guess")
-    plt.subplot(1, 2, 2)
-    plt.title("Final guess")
+    plt.title("Step=1")
+    plt.subplot(1, 3, 2)
+    plt.title("Step=50")
+    plot_scenario(
+        robots_pos=robots_pos,
+        targets_pos_real=targets_pos_real,
+        est_targets_dists=est_targets_dists,
+        est_targets_pos=history_z[50],
+        num_targets=NUM_TARGETS,
+    )
+    plt.subplot(1, 3, 3)
+    plt.title("Final step")
     plot_scenario(
         robots_pos=robots_pos,
         targets_pos_real=targets_pos_real,
