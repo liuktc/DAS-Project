@@ -166,7 +166,7 @@ class RobotNode(Node):
             "position": self.position.tolist(),
             "target": self.target.tolist(),
             "sigma_est": self.s_i.tolist(),
-            "grad_est": self.v_i.tolist()
+            "grad_est": (self.loss_fn.grad_z(self.position, self.s_i) + self.v_i * self.grad_phi(self.position)).tolist()
         }, ignore_index=True)
 
 

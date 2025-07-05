@@ -12,17 +12,17 @@ from utils import generate_adj_matrix
 # PARAMETERS
 ###############################
 
-NUM_ROBOTS = 3
+NUM_ROBOTS = 5
 VAR_DIMS = 2
-SEED = 42
-NUM_ITERATIONS = 1000
+SEED = 47
+NUM_ITERATIONS = 10000
 # ALPHA = lambda k: 2e-2
-ALPHA = 2e-3
+ALPHA = 1e-3
 GAMMAS = [0.1] * NUM_ROBOTS
 
 rng = np.random.default_rng(SEED)
 
-SIMULATION_HZ = 100 # Hz, how often the optimization step is run
+SIMULATION_HZ = 300 # Hz, how often the optimization step is run
 
 
 #############################

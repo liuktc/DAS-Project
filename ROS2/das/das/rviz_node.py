@@ -32,13 +32,21 @@ def unpack_message(msg):
         "target_pos": target_pos,
     }
 
+# Define a cool 5 color palette
+# This is a simple palette with 5 colors, you can modify it as needed
+colors = [[1,0,0,1], 
+          [0,1,0,1], 
+          [0,0,1,1], 
+          [1,1,0,1], 
+          [0.5,0.5,0.5,1]]  # Red, Green, Blue, Yellow, Gray
+
 
 
 class RvizPublisher(Node):
     def __init__(self):
         super().__init__('rviz_publisher')
 
-        self.num_robots = 3
+        self.num_robots = 5
         self.pose_publishers = {}
         self.target_publishers = {}
 
@@ -86,10 +94,10 @@ class RvizPublisher(Node):
             marker.scale.x = 0.2  # Diameter of the sphere
             marker.scale.y = 0.2
             marker.scale.z = 0.2
-            marker.color.r = 0.0
-            marker.color.g = 1.0
-            marker.color.b = 0.0
-            marker.color.a = 1.0  # Alpha (transparency)
+            marker.color.r = float(colors[robot_id][0])
+            marker.color.g = float(colors[robot_id][1])
+            marker.color.b = float(colors[robot_id][2])
+            marker.color.a = float(colors[robot_id][3]) * 0.5 # Alpha (transparency)
             # Publish
             self.pose_publishers[robot_id].publish(marker)
 
@@ -100,19 +108,24 @@ class RvizPublisher(Node):
             target_marker.header = marker.header
             target_marker.ns = 'target'
             target_marker.id = 100 + robot_id  # Ensure unique ID
-            target_marker.type = Marker.SPHERE
+            target_marker.type = Marker.CUBE
             target_marker.action = Marker.ADD
             target_marker.pose.position.x = float(target_pos[0])
             target_marker.pose.position.y = float(target_pos[1])
             target_marker.pose.position.z = 0.0
             target_marker.pose.orientation.w = 1.0
-            target_marker.scale.x = 0.2
-            target_marker.scale.y = 0.2
-            target_marker.scale.z = 0.2
-            target_marker.color.r = 1.0
-            target_marker.color.g = 0.0
-            target_marker.color.b = 0.0
-            target_marker.color.a = 1.0
+            target_marker.scale.x = 0.1
+            target_marker.scale.y = 0.1
+            target_marker.scale.z = 0.1
+            # Set color for target marker
+            target_marker.color.r = float(colors[robot_id][0]) * 0.5  # Make target color a bit lighter
+            target_marker.color.g = float(colors[robot_id][1]) * 0.5
+            target_marker.color.b = float(colors[robot_id][2]) * 0.5
+            target_marker.color.a = float(colors[robot_id][3])
+            # target_marker.color.r = 1.0
+            # target_marker.color.g = 0.0
+            # target_marker.color.b = 0.0
+            # target_marker.color.a = 1.0
             # Publish
             self.target_publishers[robot_id].publish(target_marker)
 

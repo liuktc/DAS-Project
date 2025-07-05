@@ -8,6 +8,7 @@ source install/setup.bash
 
 To run the aggregative optimization:
 ```bash
+export PYTHONPATH=/opt/ros/humble/lib/python3.10/site-packages:$PYTHONPATH
 ros2 launch launch/launch.py
 ```
 
