@@ -5,7 +5,7 @@ import os
 
 from Function import QuadraticFunction
 from plot import plot_cost_gradient_norm, plot_cost_quadratic
-from utils import gradient_tracking, generate_adj_matrix
+from utils import gradient_tracking, generate_adj_matrix, get_average_consensus_error
 from configuration import setup_quadratic_problem
 
 plt.rcParams["font.family"] = "cmr10"
@@ -106,12 +106,26 @@ def run_experiment(num_agents, vars_dim, out_dir, seed):
     # plt.show()
 
 
+    plt.figure(figsize=(8,8))
+    for graph_type in GRAPH_TYPES:
+        plt.plot([get_average_consensus_error(z) for z in history_z[graph_type]], label=graph_type)
+        plt.xlabel("$k$")
+        plt.ylabel("Avg consensus error (log)")
+        plt.yscale("log")
+    plt.tight_layout()
+    plt.legend()
+    plt.savefig(f"figs/{out_dir}/average_consensus_error.pdf", bbox_inches="tight", dpi=300)
+    plt.close()
+    #plt.show()
+
+
+
 ################################
-# LOOP PRINCIPALE
+# PRINCIPAL LOOP
 ################################
 
 for num_agents in NUM_AGENTS_LIST:
     for vars_dim in NUM_VARS_LIST:
         run_experiment(
-            num_agents, vars_dim, f"./task_1.1/{num_agents}_{vars_dim}", SEED
+            num_agents, vars_dim, f"task_1.1/{num_agents}_{vars_dim}", SEED
         )
