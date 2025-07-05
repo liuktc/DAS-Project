@@ -77,6 +77,8 @@ def run_experiment(num_agents, vars_dim, out_dir, seed):
         plt.xlabel("$k$")
         plt.ylabel("$l(z^k) (semilog)$")
         plt.yscale("symlog")
+        plt.grid()
+        # plt.grid(which="both", linestyle="--", linewidth=0.5)
         plt.legend()
         i += 1
 
@@ -93,6 +95,7 @@ def run_experiment(num_agents, vars_dim, out_dir, seed):
         plt.title(graph_type)
         plt.xlabel("$k$")
         plt.ylabel("$\\left\\Vert \\nabla l(z^k) \\right\\Vert_2$ (log)")
+        plt.grid()
         plt.yscale("log")
         i += 1
         # plt.legend(ncol=3, loc="upper center", columnspacing=0.8, labelspacing=0.25, bbox_to_anchor=(0.4, 1.35))
