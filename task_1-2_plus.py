@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from tqdm.auto import tqdm
+import os
 
 from Function import LossFunctionTask1
 from utils import gradient_tracking, generate_adj_matrix
@@ -102,6 +103,7 @@ ALPHA = lambda k: 2e-2
 
 SEED = 24
 REPS = 5  # Number of repetitions for each number of robots, to get a good average
+out_dir = "task_1.2/error_analysis"
 
 ####################################
 # ERROR ANALYSIS
@@ -115,6 +117,7 @@ REPS = 5  # Number of repetitions for each number of robots, to get a good avera
 
 errors = np.zeros((len(num_robots), REPS))
 rng = np.random.default_rng(SEED)
+os.makedirs(os.path.join("figs", out_dir), exist_ok=True)
 
 for index, NUM_ROBOTS in tqdm(enumerate(num_robots), total=len(num_robots)):
     for rep in range(REPS):
@@ -166,9 +169,9 @@ plt.title("Error vs Number of Robots")
 plt.xlabel("Number of Robots")
 plt.ylabel("Error")
 plt.plot(num_robots, erros_mean, label="Mean Error")
-plt.plot(
-    num_robots, [NOISE_STD**2 for _ in num_robots], label="Noise Std", linestyle="--"
-)
+#plt.plot(
+#    num_robots, [NOISE_STD**2 for _ in num_robots], label="Noise Std", linestyle="--"
+#)
 plt.fill_between(
     num_robots,
     erros_mean - erros_std,
@@ -178,4 +181,6 @@ plt.fill_between(
 )
 plt.legend()
 plt.grid()
-plt.show()
+plt.savefig(f"figs/{out_dir}/error_analysis.pdf", bbox_inches="tight", dpi=300)
+plt.close()
+#plt.show()
