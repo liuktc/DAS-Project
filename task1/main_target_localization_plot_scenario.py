@@ -52,7 +52,7 @@ def run_experiment(num_agents, vars_dim, num_targets, graph_type, noise_level, o
     )
     
     #Plots
-    plt.figure(figsize=(16, 8))
+    plt.figure(figsize=(16, 4))
     plt.subplot(1, 3, 1)
     plot_scenario(
         robots_pos=robots_pos,
@@ -81,7 +81,7 @@ def run_experiment(num_agents, vars_dim, num_targets, graph_type, noise_level, o
         num_targets=NUM_TARGETS,
     )
     plt.tight_layout()
-    plt.savefig(f"figs/{out_dir}/scenario.pdf", bbox_inches="tight", dpi=300)
+    plt.savefig(f"figs/{out_dir}/scenario.pdf", bbox_inches="tight", pad_inches=0, dpi=300)
     plt.close()
 
     

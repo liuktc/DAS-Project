@@ -67,39 +67,29 @@ def run_experiment(num_agents, vars_dim, out_dir, seed):
         )
 
     # Plots
-    plt.figure(figsize=(16, 16))
-    i = 1
+    plt.figure(figsize=(8, 8))
     for graph_type in GRAPH_TYPES:
-        plt.subplot(2, 2, i)
         plot_cost_quadratic(local_loss, history_z[graph_type], graph_type)
-        plt.plot([optimal_cost] * (NUM_ITERATIONS + 1), "--", label="optimum")
-        plt.title(graph_type)
         plt.xlabel("$k$")
         plt.ylabel("$l(z^k) (semilog)$")
         plt.yscale("symlog")
-        plt.grid()
         # plt.grid(which="both", linestyle="--", linewidth=0.5)
-        plt.legend()
-        i += 1
-
+    plt.grid()
+    plt.plot([optimal_cost] * (NUM_ITERATIONS + 1), "--", label="optimum")
+    plt.legend()
     plt.tight_layout(pad=1.0)
     plt.savefig(f"figs/{out_dir}/cost.pdf", bbox_inches="tight", dpi=300)
     plt.close()
     # plt.show()
 
-    plt.figure(figsize=(16, 16))
-    i = 1
+    plt.figure(figsize=(8, 8))
     for graph_type in GRAPH_TYPES:
-        plt.subplot(2, 2, i)
         plot_cost_gradient_norm(local_loss, history_z[graph_type], graph_type)
-        plt.title(graph_type)
         plt.xlabel("$k$")
         plt.ylabel("$\\left\\Vert \\nabla l(z^k) \\right\\Vert_2$ (log)")
-        plt.grid()
         plt.yscale("log")
-        i += 1
-        # plt.legend(ncol=3, loc="upper center", columnspacing=0.8, labelspacing=0.25, bbox_to_anchor=(0.4, 1.35))
-
+    plt.grid()
+    plt.legend()
     plt.tight_layout(pad=1.0)
     plt.savefig(f"figs/{out_dir}/gradient.pdf", bbox_inches="tight", dpi=300)
     plt.close()

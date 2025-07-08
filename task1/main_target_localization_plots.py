@@ -20,7 +20,7 @@ SEED = 42
 NUM_ITERATIONS = 5000
 ALPHA = lambda k: 2e-2
 
-NUM_AGENTS_LIST = [5, 10, 15]
+NUM_AGENTS_LIST = [5, 15, 30]
 VARS_DIM = 2
 NUM_TARGETS_LIST = [1, 3]
 NOISE_LEVEL_LIST = [0.04, 0.5, 1, 1.5]
@@ -55,31 +55,24 @@ def run_experiment(num_agents, vars_dim, num_targets, noise_level, out_dir, seed
         )
     
     #Plots
-    plt.figure(figsize=(16, 16))
-    i = 1
+    plt.figure(figsize=(8, 8))
     for graph_type in GRAPH_TYPES:
-        plt.subplot(2, 2, i)
         plot_cost_target_localization(local_loss, history_z[graph_type], num_agents, graph_type)
-        plt.title(graph_type)
         plt.xlabel("$k$")
         plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
         plt.grid()
         plt.ylabel("$l(z^k) (log)$")
         plt.yscale("log")
-        i += 1
-
+    plt.legend()
     plt.tight_layout(pad=1.0)
     plt.savefig(f"figs/{out_dir}/cost.pdf", bbox_inches="tight", dpi=300)
     plt.close()
     #plt.show()
 
     
-    plt.figure(figsize=(16, 16))
-    i = 1
+    plt.figure(figsize=(8, 8))
     for graph_type in GRAPH_TYPES:
-        plt.subplot(2, 2, i)
         plot_target_localization_gradient_norm(local_loss, history_z[graph_type], num_agents, graph_type)
-        plt.title(graph_type)
         plt.xlabel("$k$")
         plt.grid(visible=True, which='major', linestyle='-', linewidth=0.8, alpha=0.7)
         plt.grid(visible=True, which='minor', linestyle=':', linewidth=0.5, alpha=0.4)
@@ -87,9 +80,8 @@ def run_experiment(num_agents, vars_dim, num_targets, noise_level, out_dir, seed
         # plt.grid(True, which='both', linestyle='--', linewidth=0.5, alpha=0.7)
         plt.ylabel("$\\left\\Vert \\nabla l(z^k) \\right\\Vert_2$ (log)")
         plt.yscale('log')
-        i += 1
         #plt.legend(ncol=3, loc="upper center", columnspacing=0.8, labelspacing=0.25, bbox_to_anchor=(0.4, 1.35))
-    
+    plt.legend()
     plt.tight_layout(pad=1.0)
     plt.savefig(f"figs/{out_dir}/gradient.pdf", bbox_inches="tight", dpi=300)
     plt.close()
@@ -106,6 +98,7 @@ def run_experiment(num_agents, vars_dim, num_targets, noise_level, out_dir, seed
     plt.legend()
     plt.savefig(f"figs/{out_dir}/average_consensus_error.pdf", bbox_inches="tight", dpi=300)
     plt.close()
+    #plt.show()
 
 
 def run_noise_experiment(num_agents, vars_dim, num_targets, graph_type, out_dir, seed):
@@ -186,9 +179,9 @@ def run_noise_experiment(num_agents, vars_dim, num_targets, graph_type, out_dir,
 ################################
 
 #Varying Num Agents and Num Targets
-#for num_agents in NUM_AGENTS_LIST:
-#    for num_targets in NUM_TARGETS_LIST:
-#        run_experiment(num_agents, VARS_DIM, num_targets, 0.04, f"./task_1.2/{num_agents}_{num_targets}", SEED)
+for num_agents in NUM_AGENTS_LIST:
+    for num_targets in NUM_TARGETS_LIST:
+        run_experiment(num_agents, VARS_DIM, num_targets, 0.04, f"./task_1.2/{num_agents}_{num_targets}", SEED)
 
 ##Varying Noise Level
-run_noise_experiment(num_agents=5, vars_dim=2, num_targets=2, graph_type="erdos_renyi", out_dir=f"./task_1.2/noise_level", seed=SEED)
+#run_noise_experiment(num_agents=5, vars_dim=2, num_targets=2, graph_type="erdos_renyi", out_dir=f"./task_1.2/noise_level", seed=SEED)
