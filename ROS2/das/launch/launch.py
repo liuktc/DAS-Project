@@ -15,20 +15,18 @@ from utils import generate_adj_matrix
 NUM_ROBOTS = 5
 VAR_DIMS = 2
 SEED = 47
-NUM_ITERATIONS = 10000
-# ALPHA = lambda k: 2e-2
+NUM_ITERATIONS = 5000
 ALPHA = 1e-3
-GAMMAS = [0.1] * NUM_ROBOTS
+GAMMAS = [0.5] * NUM_ROBOTS
 
-rng = np.random.default_rng(SEED)
-
-SIMULATION_HZ = 300 # Hz, how often the optimization step is run
+SIMULATION_HZ = 2000 # Hz, how often the optimization step is run
 
 
 #############################
 # PROBLEM SETUP
 #############################
 
+rng = np.random.default_rng(SEED)
 PRIVATE_TARGETS = rng.random(size=(NUM_ROBOTS, VAR_DIMS))
 ROBOT_INITIAL_POSITIONS = rng.random(size=(NUM_ROBOTS, VAR_DIMS))
 
@@ -40,17 +38,11 @@ G, A = generate_adj_matrix(
     erdos_renyi_p=0.3,
 )
 
-print(A)
-
 def generate_launch_description():
     robot_nodes = []
 
-    initial_positions = ROBOT_INITIAL_POSITIONS
-    private_targets = PRIVATE_TARGETS
-
-
     for i in range(NUM_ROBOTS):
-        print(f"Creating robot node {i} with initial position {initial_positions[i]} and private target {private_targets[i]}")
+        print(f"Creating robot node {i} with initial position {ROBOT_INITIAL_POSITIONS[i]} and private target {PRIVATE_TARGETS[i]}")
         robot_node = Node(
             package='das',
             executable='robot_node',
@@ -58,8 +50,8 @@ def generate_launch_description():
             namespace=f'robot_{i}',
             parameters=[{
                 'robot_id': i,
-                'initial_position': initial_positions[i].tolist(),
-                'private_target': private_targets[i].tolist(),
+                'initial_position': ROBOT_INITIAL_POSITIONS[i].tolist(),
+                'private_target': PRIVATE_TARGETS[i].tolist(),
                 'gamma': GAMMAS[i],
                 'alpha': ALPHA,
                 'max_iterations': NUM_ITERATIONS,

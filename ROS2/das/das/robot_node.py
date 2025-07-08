@@ -4,34 +4,10 @@ from std_msgs.msg import Float64MultiArray
 import numpy as np
 
 from das.utils.Function import LossFunctionTask2
+from das.utils.Message import format_message, unpack_message
 import pandas as pd
 
 
-def format_message(id, curr_k, target_pos, curr_sigma, curr_grad, curr_z):
-    msg = Float64MultiArray()
-    vars_dim = len(curr_z)
-    msg.data = [float(id), float(curr_k), float(vars_dim),*target_pos,  *curr_sigma, *curr_grad, *curr_z]
-    return msg
-
-
-def unpack_message(msg):
-    data = msg.data
-    id = int(data[0])
-    k = int(data[1])
-    vars_dim = int(data[2])
-    target_pos = np.array(data[3 : 3 + vars_dim])
-    sigma_est = np.array(data[3 + vars_dim : 3 + 2 * vars_dim])
-    grad_est = np.array(data[3 + 2 * vars_dim : 3 + 3 * vars_dim])
-    z = np.array(data[3 + 3 * vars_dim : 3 + 4 * vars_dim])
-
-    return {
-        "id": id,
-        "k": k,
-        "sigma_est": sigma_est,
-        "grad_est": grad_est,
-        "z": z,
-        "target_pos": target_pos,
-    }
 
 
 class RobotNode(Node):
@@ -55,7 +31,7 @@ class RobotNode(Node):
         self.simulation_hz = self.get_parameter('simulation_hz').value
 
         # Initialize DataFrame to store data
-        self.df:pd.DataFrame = pd.DataFrame(columns=["robot_id", "iteration", "position", "target", "sigma_est", "grad_est"])
+        self.df:pd.DataFrame = pd.DataFrame(columns=["robot_id", "iteration", "position", "target", "sigma_est", "grad_est", "grad_z", "grad_sigma_z"])
         
         # Local variables
         self.s_i = self.phi(self.position)
@@ -80,10 +56,10 @@ class RobotNode(Node):
             callback=self.send_state
         )
 
-        self.create_timer(
-            timer_period_sec=5.0,  # Save data every 5 second
-            callback=self.save_df
-        )
+        # self.create_timer(
+        #     timer_period_sec=5.0,  # Save data every 5 second
+        #     callback=self.save_df
+        # )
         
         # Store neighbor states
         self.neighbor_states = {}
@@ -119,14 +95,23 @@ class RobotNode(Node):
             callback=self.optimization_step
         )
 
-
+    def shutdown_node(self):
+        self.get_logger().info("Shutting down node.")
+        self.destroy_node()
+        rclpy.shutdown()
 
     def optimization_step(self):
         if self.iteration >= self.max_iterations:
             self.optimization_timer.cancel()
             self.save_df()
             self.get_logger().info("Optimization finished.")
-            rclpy.shutdown()
+            self.send_state()
+            #Shutdown after 1 second to ensure all messages are sent
+            self.get_logger().info("Shutting down node.")
+            self.create_timer(
+                timer_period_sec=2.0,
+                callback=self.shutdown_node
+            )
             return
 
 
@@ -151,8 +136,7 @@ class RobotNode(Node):
         self.v_i = new_v
         
         # Publish the updated state
-        msg = format_message(self.robot_id, self.iteration, self.target, self.s_i, self.v_i, self.position)
-        self.publisher_.publish(msg)
+        self.send_state()
 
         # Remove old neighbor states
         self.neighbor_states = {}
@@ -166,7 +150,10 @@ class RobotNode(Node):
             "position": self.position.tolist(),
             "target": self.target.tolist(),
             "sigma_est": self.s_i.tolist(),
-            "grad_est": (self.loss_fn.grad_z(self.position, self.s_i) + self.v_i * self.grad_phi(self.position)).tolist()
+            "grad_est": (self.loss_fn.grad_z(self.position, self.s_i) + self.v_i * self.grad_phi(self.position)).tolist(),
+            "grad_z": self.loss_fn.grad_z(self.position, self.s_i).tolist(),
+            "grad_sigma_z": self.loss_fn.grad_sigma_z(self.position, self.s_i).tolist(),
+            "local_cost": self.loss_fn(self.position, self.s_i).tolist()
         }, ignore_index=True)
 
 

@@ -4,6 +4,12 @@ from utils import generate_adj_matrix
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
+plt.rcParams["font.family"] = "cmr10"
+plt.rcParams["mathtext.fontset"] = "cm"
+plt.rcParams["axes.formatter.use_mathtext"] = True
+plt.rcParams["font.size"] = 20
+plt.rcParams["legend.fontsize"] = 13
+
 
 def plot_scenario(
     robots_pos: np.ndarray, private_targets: np.ndarray, old_robots_pos=None
@@ -84,6 +90,7 @@ def gradient_tracking_aggregative(
     num_agents: int,
     phi: callable = phi,
     grad_phi: callable = grad_phi,
+    return_s_v: bool = False,
 ):
     z = np.zeros((num_iters + 1, z0.shape[0], z0.shape[1]))
     s = np.zeros((num_iters + 1, z0.shape[0], z0.shape[1]))
@@ -109,7 +116,10 @@ def gradient_tracking_aggregative(
                 - fn_list[i].grad_sigma_z(z[k, i], s[k, i])
             )
 
-    return z
+    if return_s_v:
+        return z, s, v
+    else:
+        return z
 
 
 #############################
@@ -119,8 +129,8 @@ def gradient_tracking_aggregative(
 NUM_ROBOTS = 3
 VAR_DIMS = 2
 SEED = 42
-NUM_ITERATIONS = 1000
-ALPHA = lambda k: 2e-2
+NUM_ITERATIONS = 5000
+ALPHA = lambda k: 2e-3
 GAMMAS = [0.1] * NUM_ROBOTS
 
 rng = np.random.default_rng(SEED)
@@ -138,18 +148,18 @@ robot_initial_positions = rng.random(size=(NUM_ROBOTS, VAR_DIMS))
 G, A = generate_adj_matrix(
     NUM_ROBOTS,
     connected=True,
-    self_loops=True,
     seed=SEED,
     graph_algorithm="erdos_renyi",
     erdos_renyi_p=0.3,
 )
 
-z_history = gradient_tracking_aggregative(
+z_history,s_history, v_history  = gradient_tracking_aggregative(
     fn_list=loss_functions,
     z0=robot_initial_positions.copy(),
     A=A,
     num_iters=NUM_ITERATIONS,
     alpha=ALPHA,
+    return_s_v=True,
     num_agents=NUM_ROBOTS,
 )
 
@@ -158,14 +168,14 @@ z_history = gradient_tracking_aggregative(
 # PLOT SCENARIO
 ############################
 
-plt.figure(figsize=(10, 5))
-plt.subplot(1, 2, 1)
-plot_scenario(z_history[0], private_targets)
-plt.title("Initial positions")
-plt.subplot(1, 2, 2)
-plot_scenario(z_history[-1], private_targets)
-plt.title("Final positions")
-plt.show()
+# plt.figure(figsize=(10, 5))
+# plt.subplot(1, 2, 1)
+# plot_scenario(z_history[0], private_targets)
+# plt.title("Initial positions")
+# plt.subplot(1, 2, 2)
+# plot_scenario(z_history[-1], private_targets)
+# plt.title("Final positions")
+# plt.show()
 
 
 ##############################
@@ -177,25 +187,29 @@ cost_history = [
     for z in z_history
 ]
 
-grad_cost_history = [
-    sum(
-        [
-            np.linalg.norm(loss_functions[i].grad(z_i, np.mean(z)), 2)
-            for i, z_i in enumerate(z)
-        ]
-    )
-    for z in z_history
-]
-plt.figure(figsize=(10, 4))
+grad_cost_history = np.array([
+    [(
+        loss_functions[i].grad_z(z[i], s[i]) + v[i] * grad_phi(z[i])
+    ) 
+    for i in range(NUM_ROBOTS)]
+    for z,v,s in zip(z_history, v_history, s_history)
+])
+grad_cost_history_sum = np.linalg.norm(np.sum(grad_cost_history, axis=1), axis=1)
+
+plt.figure(figsize=(10, 5), dpi=300)
 plt.subplot(1, 2, 1)
-plt.title("Cost")
+plt.title('Local Cost Function')
 plt.plot(cost_history)
 plt.xlabel("Iterations")
+plt.ylabel(r'$\ell_i(z_i, \sigma(z))$')
+plt.grid()
 plt.yscale("log")
 plt.subplot(1, 2, 2)
-plt.title("Norm grad")
-plt.plot(grad_cost_history)
+plt.title('Norm of the gradient')
+plt.plot(grad_cost_history_sum)
+plt.ylabel(r"$\|\nabla \ell_i(z_i, \sigma(z))\|$")
 plt.xlabel("Iterations")
 plt.yscale("log")
+plt.grid()
 plt.tight_layout()
 plt.show()
