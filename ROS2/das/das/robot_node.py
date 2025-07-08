@@ -18,7 +18,7 @@ class RobotNode(Node):
         
         # Get parameters
         self.robot_id = self.get_parameter('robot_id').value
-        self.filename = f'robot_{self.robot_id}_data.csv'
+        self.filename = f"{self.get_parameter('output_filename').value}"
         self.position = np.array(self.get_parameter('initial_position').value)
         self.target = np.array(self.get_parameter('private_target').value)
         self.gamma = self.get_parameter('gamma').value
@@ -108,10 +108,10 @@ class RobotNode(Node):
             self.send_state()
             #Shutdown after 1 second to ensure all messages are sent
             self.get_logger().info("Shutting down node.")
-            self.create_timer(
-                timer_period_sec=2.0,
-                callback=self.shutdown_node
-            )
+            # self.create_timer(
+            #     timer_period_sec=5.0,
+            #     callback=self.shutdown_node
+            # )
             return
 
 
