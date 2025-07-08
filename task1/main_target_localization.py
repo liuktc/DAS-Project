@@ -94,7 +94,7 @@ def plot_scenario(
 NUM_ROBOTS = 5
 NUM_TARGETS = 2
 VARS_DIM = 2
-NOISE_STD = 0.04
+NOISE_STD = 0
 
 NUM_ITERATIONS = 4000
 # ALPHA = lambda k: (5e-3 / (k / 1000 + 1)) ** 0.5
