@@ -65,6 +65,6 @@ def experiment_plot(num_robots, gamma, base_dir):
 
 
 for num_robots in [5, 15]:
-    for gamma in [0.1, 0.5, 0.9]:
+    for gamma in [0.1, 0.9]:
         base_dir = os.path.join("ROS2", "das", f"{num_robots}_{gamma:.1f}")
         experiment_plot(num_robots, gamma, base_dir)

@@ -31,7 +31,7 @@ def generate_launch_description():
         VAR_DIMS = 2
         NUM_ITERATIONS = 5000
         ALPHA = 1e-3
-        SIMULATION_HZ = 2000
+        SIMULATION_HZ = 1000
 
         rng = np.random.default_rng(SEED)
         PRIVATE_TARGETS = rng.random(size=(NUM_ROBOTS, VAR_DIMS))
