@@ -18,7 +18,7 @@ class RobotNode(Node):
         
         # Get parameters
         self.robot_id = self.get_parameter('robot_id').value
-        self.filename = f'robot_{self.robot_id}_data.csv'
+        self.filename = f"{self.get_parameter('output_filename').value}"
         self.position = np.array(self.get_parameter('initial_position').value)
         self.target = np.array(self.get_parameter('private_target').value)
         self.gamma = self.get_parameter('gamma').value
@@ -75,8 +75,10 @@ class RobotNode(Node):
             self.get_logger().error(f"Received message from unknown neighbor {sender_id}. Expected neighbors: {self.neighbors}")
             return
 
-        if sender_id in self.neighbors:
-            self.neighbor_states[sender_id] = data
+        # Save the state only if it is from the current iteration
+        if data["k"] != self.iteration:
+            return
+        self.neighbor_states[sender_id] = data
 
     def send_state(self):
         msg = format_message(self.robot_id, self.iteration,self.target, self.s_i, self.v_i, self.position)
@@ -108,18 +110,22 @@ class RobotNode(Node):
             self.send_state()
             #Shutdown after 1 second to ensure all messages are sent
             self.get_logger().info("Shutting down node.")
-            self.create_timer(
-                timer_period_sec=2.0,
-                callback=self.shutdown_node
-            )
+            # self.create_timer(
+            #     timer_period_sec=5.0,
+            #     callback=self.shutdown_node
+            # )
             return
+        self.send_state()
 
 
         # Check if we have received all neighbor states
         if len(self.neighbor_states) < len(self.neighbors):
-            self.get_logger().info(f"Waiting for neighbor states. Received {len(self.neighbor_states)} out of {len(self.neighbors)}.")
+            # self.get_logger().info(f"Waiting for neighbor states. Received {len(self.neighbor_states)} out of {len(self.neighbors)}.")
             return
         
+        if any([not state["k"] == self.iteration for state in self.neighbor_states.values()]):
+            self.get_logger().info(f"Waiting for neighbor states to match iteration {self.iteration}.")
+            return
 
         # Compute aggregative step
         new_position = self.position - self.step_size * (self.loss_fn.grad_z(self.position, self.s_i) + self.v_i * self.grad_phi(self.position))
@@ -134,15 +140,15 @@ class RobotNode(Node):
         self.position = new_position
         self.s_i = new_s
         self.v_i = new_v
+
+        self.iteration += 1
+        self.get_logger().info(f"Iteration {self.iteration}: Position = {self.position}")
         
         # Publish the updated state
         self.send_state()
 
         # Remove old neighbor states
         self.neighbor_states = {}
-
-        self.get_logger().info(f"Iteration {self.iteration}: Position = {self.position}")
-        self.iteration += 1
 
         self.df = self.df._append({
             "robot_id": self.robot_id,
