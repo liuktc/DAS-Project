@@ -5,6 +5,8 @@ from Function import Function
 from typing import Literal
 from tqdm.auto import tqdm
 
+import numpy.typing as npt
+
 
 def gradient_tracking(
     loss_functions: list[Function],
@@ -95,11 +97,11 @@ def generate_adj_matrix(
 
     return G, A
 
-def get_average_consensus_error(z):
+def get_average_consensus_error(z : npt.NDArray) -> float: 
     consensus = np.mean(z, axis=0)
     return np.mean([np.linalg.norm(z[i]-consensus) for i in range(len(z))])
 
-def get_average_estimate_error(robot_estimates, target_pos_real):
+def get_average_estimate_error(robot_estimates:npt.NDArray, target_pos_real:npt.NDArray) -> float:
     num_robots = len(robot_estimates)
     num_targets = len(target_pos_real)
     dists = 0
