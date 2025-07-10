@@ -7,6 +7,8 @@ from das.utils.Function import LossFunctionTask2
 from das.utils.Message import format_message, unpack_message
 import pandas as pd
 
+from rclpy.qos import QoSProfile, ReliabilityPolicy
+
 
 
 
@@ -38,23 +40,27 @@ class RobotNode(Node):
         self.v_i = self.loss_fn.grad_sigma_z(self.position, self.s_i)
         self.iteration = 0
 
+        qos_profile = QoSProfile(depth=100)
+        qos_profile.reliability = ReliabilityPolicy.RELIABLE
+
+
         # Subscribe to neighbor states
         for neighbor in self.neighbors:
             self.create_subscription(
                 Float64MultiArray,
                 f'/robot_{neighbor}',
                 self.listener_callback,
-                10
+                qos_profile=qos_profile
             )
 
         # Publisher for this robot's state
-        self.publisher_ = self.create_publisher(Float64MultiArray, f'/robot_{self.robot_id}', 10)
+        self.publisher_ = self.create_publisher(Float64MultiArray, f'/robot_{self.robot_id}', qos_profile=qos_profile)
 
         # Create a timer to send state periodically
-        self.create_timer(
-            timer_period_sec=0.001,
-            callback=self.send_state
-        )
+        # self.create_timer(
+        #     timer_period_sec=(1/self.simulation_hz) / 10,  # Send state at the simulation frequency
+        #     callback=self.send_state
+        # )
 
         # self.create_timer(
         #     timer_period_sec=5.0,  # Save data every 5 second
@@ -70,15 +76,16 @@ class RobotNode(Node):
     def listener_callback(self, msg):
         data = unpack_message(msg)
         sender_id = data["id"]
+        iter_k = data["k"]
 
         if sender_id not in self.neighbors:
-            self.get_logger().error(f"Received message from unknown neighbor {sender_id}. Expected neighbors: {self.neighbors}")
+            self.get_logger().error(f"Received message from unknown neighbor {sender_id}.")
             return
 
-        # Save the state only if it is from the current iteration
-        if data["k"] != self.iteration:
-            return
-        self.neighbor_states[sender_id] = data
+        # Store by iteration
+        if iter_k not in self.neighbor_states:
+            self.neighbor_states[iter_k] = {}
+        self.neighbor_states[iter_k][sender_id] = data
 
     def send_state(self):
         msg = format_message(self.robot_id, self.iteration,self.target, self.s_i, self.v_i, self.position)
@@ -108,47 +115,46 @@ class RobotNode(Node):
             self.save_df()
             self.get_logger().info("Optimization finished.")
             self.send_state()
-            #Shutdown after 1 second to ensure all messages are sent
-            self.get_logger().info("Shutting down node.")
-            # self.create_timer(
-            #     timer_period_sec=5.0,
-            #     callback=self.shutdown_node
-            # )
+            
+            self.shutdown_node()
             return
+
         self.send_state()
 
-
         # Check if we have received all neighbor states
-        if len(self.neighbor_states) < len(self.neighbors):
-            # self.get_logger().info(f"Waiting for neighbor states. Received {len(self.neighbor_states)} out of {len(self.neighbors)}.")
+        current_states = self.neighbor_states.get(self.iteration, {})
+        if len(current_states) < len(self.neighbors):
+            if self.robot_id == 0:
+                self.get_logger().info(f"Waiting for neighbor states. Received {len(current_states)} out of {len(self.neighbors)}. Current iteration: {self.iteration}")
             return
-        
-        if any([not state["k"] == self.iteration for state in self.neighbor_states.values()]):
-            self.get_logger().info(f"Waiting for neighbor states to match iteration {self.iteration}.")
-            return
+                
 
+        
         # Compute aggregative step
         new_position = self.position - self.step_size * (self.loss_fn.grad_z(self.position, self.s_i) + self.v_i * self.grad_phi(self.position))
 
-        new_s = (sum(self.neighbors_weights[n] * self.neighbor_states[n]["sigma_est"] for n in self.neighbors)
+        new_s = (sum(self.neighbors_weights[n] * current_states[n]["sigma_est"] for n in self.neighbors)
                 + (self.phi(new_position) - self.phi(self.position)))
 
-        new_v = (sum(self.neighbors_weights[n] * self.neighbor_states[n]["grad_est"] for n in self.neighbors)
+        new_v = (sum(self.neighbors_weights[n] * current_states[n]["grad_est"] for n in self.neighbors)
                 + (self.loss_fn.grad_sigma_z(new_position, new_s) - self.loss_fn.grad_sigma_z(self.position, self.s_i)))
         
+        self.send_state()
+
         # Update local state
         self.position = new_position
         self.s_i = new_s
         self.v_i = new_v
 
+        # Remove the current iteration's neighbor states
+        del self.neighbor_states[self.iteration]
+
         self.iteration += 1
-        self.get_logger().info(f"Iteration {self.iteration}: Position = {self.position}")
+        if self.robot_id == 0:
+            self.get_logger().info(f"Iteration {self.iteration}: Position = {self.position}")
         
         # Publish the updated state
         self.send_state()
-
-        # Remove old neighbor states
-        self.neighbor_states = {}
 
         self.df = self.df._append({
             "robot_id": self.robot_id,
@@ -173,11 +179,10 @@ def main(args=None):
     robot_node = RobotNode()
     try:
         rclpy.spin(robot_node)
-    except KeyboardInterrupt:
-        pass
-    finally:
+    except Exception:
         robot_node.destroy_node()
-    rclpy.shutdown()
+        rclpy.shutdown()
+
 
 
 if __name__ == '__main__':

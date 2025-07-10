@@ -10,7 +10,35 @@ plt.rcParams["font.size"] = 20
 plt.rcParams["legend.fontsize"] = 13
 
 
-def plot(df, col,num_robots, sum_over_robots=False, plot_single_robots=True):
+GRAPH_METHODS = {
+    "": "Erdős-Rényi",
+    "path": "Path",
+    "cycle": "Cycle",
+    "star": "Star",
+}
+
+def merge_dfs(folder_path):
+
+    # List all files in the directory
+    files = [f for f in os.listdir(folder_path) if f.endswith('.csv') and f.startswith('robot_')]
+    dfs = []
+    for file in files:
+        # Read the CSV file into a DataFrame
+        df = pd.read_csv(os.path.join(folder_path, file))
+        # Add a new column for the graph method based on the filename
+        if len(file.split('_')) < 3:
+            graph_method = ""
+        else:
+            graph_method = file.split('_')[2].split('.')[0]  # Extract the graph
+        df['graph_method'] = GRAPH_METHODS.get(graph_method, 'Erdős-Rényi')
+
+        dfs.append(df)
+    
+    return pd.concat(dfs, ignore_index=True)
+
+
+
+def plot(df, col,num_robots, sum_over_robots=False, plot_single_robots=True, label=""):
     robots_values = []
     for i in range(num_robots):
         robot_df = df[df['robot_id'] == i]
@@ -22,7 +50,7 @@ def plot(df, col,num_robots, sum_over_robots=False, plot_single_robots=True):
     
     if sum_over_robots:
         summed_values = np.sum(np.array(robots_values), axis=0)
-        plt.plot(robot_df['iteration'].to_numpy(), summed_values, label='Sum over Robots', color='black', linewidth=2)
+        plt.plot(robot_df['iteration'].to_numpy(), summed_values, label=label)
         
     plt.xlabel('Iteration')
     plt.yscale('log')
@@ -30,17 +58,10 @@ def plot(df, col,num_robots, sum_over_robots=False, plot_single_robots=True):
 
 
 def experiment_plot(num_robots, gamma, base_dir):
-    dfs = []
-    for i in range(num_robots):
-        df = pd.read_csv(os.path.join(base_dir, f'robot_{i}.csv'))
-        dfs.append(df)
-
-    df = pd.concat(dfs, ignore_index=True)
+    df = merge_dfs(base_dir)
 
     # Parse position columns, not it is in format "[a,b,c]"
-    for col in df.columns[2:]:
-        if col == "local_cost":
-            continue
+    for col in ["position", "target", "sigma_est", "grad_est", "grad_z", "grad_sigma_z"]:
         df[col] = df[col].apply(lambda x: np.fromstring(x.strip('[]'), sep=','))
 
 
@@ -49,15 +70,24 @@ def experiment_plot(num_robots, gamma, base_dir):
 
     plt.figure(figsize=(12, 6), dpi=300)
     plt.subplot(1, 2, 1)
-    plot(df, 'local_cost',num_robots, sum_over_robots=True, plot_single_robots=False)
+    for graph in GRAPH_METHODS.values():
+        graph_df = df[df['graph_method'] == graph]
+        if not graph_df.empty:
+            plot(graph_df, 'local_cost', num_robots, sum_over_robots=True, plot_single_robots=False, label=graph)
+    # plot(df, 'local_cost',num_robots, sum_over_robots=True, plot_single_robots=False)
     plt.ylabel(r'$\ell_i(z_i, \sigma(z))$')
     plt.title('Local Cost Function')
+    plt.legend(loc='upper right')
 
     plt.subplot(1, 2, 2)
-    plot(df, 'grad_est',num_robots, sum_over_robots=True, plot_single_robots=False)
+    for graph in GRAPH_METHODS.values():
+        graph_df = df[df['graph_method'] == graph]
+        if not graph_df.empty:
+            plot(graph_df, 'grad_est', num_robots, sum_over_robots=True, plot_single_robots=False, label=graph)
     plt.title('Norm of the gradient')
     plt.xlabel('Iteration')
     plt.ylabel(r"$\|\nabla \ell_i(z_i, \sigma(z))\|$")
+    plt.legend(loc='upper right')
 
     plt.tight_layout()
     plt.savefig(os.path.join("figs", "task_2.2", f"{num_robots}_{gamma:.1f}.pdf"), dpi=300)
