@@ -148,3 +148,39 @@ class LossFunctionTask2_MaxDistance(Function):
         grad_z = self.grad_z(z, sigma_z)
         grad_sigma_z = self.grad_sigma_z(z, sigma_z)
         return np.concatenate((grad_z, grad_sigma_z), axis=0)
+    
+
+class LossFunctionTask2Adaptive(Function):
+    def __init__(self, private_target: np.ndarray, gamma: float, max_distance: float):
+        self.private_target = private_target
+        self.gamma = gamma
+        self.max_distance = max_distance
+
+    def weight(self, z: np.ndarray) -> float:
+        d = np.linalg.norm(z - self.private_target)
+        return 1.0 / (1.0 + np.exp(-10 * (self.max_distance - d)))
+
+    def __call__(self, z: np.ndarray, sigma_z: np.ndarray) -> np.ndarray:
+        target_loss = np.linalg.norm(z - self.private_target) ** 2
+        team_loss = np.linalg.norm(z - sigma_z) ** 2
+
+        w = self.weight(z)  
+
+        return target_loss + self.gamma * w * team_loss
+
+    def grad_z(self, z: np.ndarray, sigma_z: np.ndarray) -> np.ndarray:
+        d = np.linalg.norm(z - self.private_target)
+        w = self.weight(z)
+
+        target_grad = 2 * (z - self.private_target)
+        team_grad = 2 * (z - sigma_z)
+        return target_grad + self.gamma * w * team_grad
+
+    def grad_sigma_z(self, z: np.ndarray, sigma_z: np.ndarray) -> np.ndarray:
+        w = self.weight(z)
+        return -2 * self.gamma * w * (z - sigma_z)
+
+    def grad(self, z: np.ndarray, sigma_z: np.ndarray) -> np.ndarray:
+        grad_z = self.grad_z(z, sigma_z)
+        grad_sigma_z = self.grad_sigma_z(z, sigma_z)
+        return np.concatenate((grad_z, grad_sigma_z), axis=0)

@@ -1,15 +1,28 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-def plot_cost_quadratic(local_loss, history_z, label):
+from IPython.display import HTML
+from matplotlib.animation import FuncAnimation
+from IPython.display import display
+
+import numpy.typing as npt
+
+def plot_cost_quadratic(local_loss: list[function], 
+                        history_z: npt.NDArray, 
+                        label: str):
     costs = [ sum(local_loss[i](z[i]) for i in range(len(local_loss))) for z in history_z ]
     plt.plot(costs, label=label)
 
-def plot_cost_gradient_norm(local_loss, history_z, label):
+def plot_cost_gradient_norm(local_loss: list[function], 
+                            history_z: npt.NDArray, 
+                            label: str):
     grad_norms = [ np.linalg.norm( np.sum([local_loss[i].grad(z[i]) for i in range(len(local_loss))], axis=0), 2 ) for z in history_z]
     plt.plot(grad_norms, label=label)
 
-def plot_cost_target_localization(local_loss, history_z, num_agents, label):
+def plot_cost_target_localization(local_loss: list[function], 
+                                  history_z: npt.NDArray, 
+                                  num_agents: int, 
+                                  label: str):
     plt.plot(
     range(len(history_z)),
     [
@@ -111,3 +124,33 @@ def plot_scenario(
                 ),
             ]
     plt.legend(handles=handles, loc='center left', bbox_to_anchor=(1, 0.5), fontsize=10)
+
+# Function for create animation
+def animate_scenario(z_history, frames, robots_pos, targets_pos_real, est_targets_dists, NUM_TARGETS):
+    fig, ax = plt.subplots()
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1)
+    ax.set_title("Gradient Tracking Algorithm")
+    ax.set_xlabel("X")
+    ax.set_ylabel("Y")
+
+    def update(frame_idx):
+        ax.clear()
+        ax.set_xlim(0, 1)
+        ax.set_ylim(0, 1)
+        ax.set_title("Gradient Tracking Algorithm")
+        ax.set_xlabel("X")
+        ax.set_ylabel("Y")
+        plot_scenario(robots_pos, 
+                      targets_pos_real,
+                      est_targets_dists,
+                      z_history[frames[frame_idx]],
+                      num_targets=NUM_TARGETS)
+        return (ax,)
+
+    ani = FuncAnimation(fig, update, frames=len(frames), blit=False, interval=200)
+
+    display(HTML(ani.to_jshtml()))
+
+    # Save the animation as a video file
+    # ani.save("gradient_tracking_animation.mp4", fps=10, extra_args=["-vcodec", "libx264"])
