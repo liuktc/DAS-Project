@@ -141,10 +141,10 @@ def animate_scenario(z_history, frames, robots_pos, targets_pos_real, est_target
         ax.set_title("Gradient Tracking Algorithm")
         ax.set_xlabel("X")
         ax.set_ylabel("Y")
-        plot_scenario(robots_pos, 
-                      targets_pos_real,
-                      est_targets_dists,
-                      z_history[frames[frame_idx]],
+        plot_scenario(robots_pos=robots_pos, 
+                      targets_pos_real=targets_pos_real,
+                      est_targets_dists=est_targets_dists,
+                      est_targets_pos=z_history[frames[frame_idx]],
                       num_targets=NUM_TARGETS)
         return (ax,)
 
