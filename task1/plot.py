@@ -1,28 +1,28 @@
 import matplotlib.pyplot as plt
 import numpy as np
-
+from Function import Function
 from IPython.display import HTML
 from matplotlib.animation import FuncAnimation
 from IPython.display import display
 
 import numpy.typing as npt
 
-def plot_cost_quadratic(local_loss: list[function], 
-                        history_z: npt.NDArray, 
+def plot_cost_quadratic(local_loss, 
+                        history_z, 
                         label: str):
     costs = [ sum(local_loss[i](z[i]) for i in range(len(local_loss))) for z in history_z ]
     plt.plot(costs, label=label)
 
-def plot_cost_gradient_norm(local_loss: list[function], 
-                            history_z: npt.NDArray, 
-                            label: str):
+def plot_cost_gradient_norm(local_loss, 
+                            history_z, 
+                            label):
     grad_norms = [ np.linalg.norm( np.sum([local_loss[i].grad(z[i]) for i in range(len(local_loss))], axis=0), 2 ) for z in history_z]
     plt.plot(grad_norms, label=label)
 
-def plot_cost_target_localization(local_loss: list[function], 
-                                  history_z: npt.NDArray, 
-                                  num_agents: int, 
-                                  label: str):
+def plot_cost_target_localization(local_loss, 
+                                  history_z, 
+                                  num_agents, 
+                                  label):
     plt.plot(
     range(len(history_z)),
     [
